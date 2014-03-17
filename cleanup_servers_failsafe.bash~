@@ -1,7 +1,0 @@
-#!/bin/bash
-
-for ((i = 1; i <= 35; i+=1))do
-  #echo "---------------------------- aus213l$i ----------------------------------"
-  ((echo 'pkill server_leaf' ; exit) | ssh -T -p 215 aus213l$i) &
-  #echo ""
-done
