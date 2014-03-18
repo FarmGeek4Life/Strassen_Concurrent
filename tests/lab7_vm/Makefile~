@@ -1,0 +1,84 @@
+# Force bash as the shell so that 'time' works
+SHELL = /bin/bash
+
+all: threads-pthreads threads-omp threads-c++11 threads-c++11_future threads-c++11_future_no-async threads-opencl
+
+threads-pthreads: threads-pthreads.cpp
+	g++ -o threads-pthreads -pthread threads-pthreads.cpp
+
+threads-c++11: threads-c++11.cpp
+	g++ -o threads-c++11 threads-c++11.cpp -std=c++11 -pthread || g++ -o threads-c++11 threads-c++11.cpp -std=c++0x -pthread
+
+threads-c++11_future: threads-c++11_future.cpp
+	-g++ -o threads-c++11_future threads-c++11_future.cpp -std=c++11 -pthread || g++ -o threads-c++11_future threads-c++11_future.cpp -std=c++0x -pthread
+
+threads-c++11_future_no-async: threads-c++11_future_no-async.cpp
+	-g++ -o threads-c++11_future_no-async threads-c++11_future_no-async.cpp -std=c++11 -pthread || g++ -o threads-c++11_future_no-async threads-c++11_future_no-async.cpp -std=c++0x -pthread
+
+threads-omp: threads-omp.cpp
+	g++ -o threads-omp threads-omp.cpp -fopenmp
+
+threads-opencl: threads-opencl.cpp
+	-g++ -o threads-opencl threads-opencl.cpp -std=c++11 -lOpenCL || g++ -o threads-opencl threads-opencl.cpp -std=c++0x -lOpenCL
+
+test: all
+	./threads-pthreads | diff - threads_solution.txt
+	./threads-omp | diff - threads_solution.txt
+	./threads-c++11 | diff - threads_solution.txt
+	-./threads-c++11_future_no-async | diff - threads_solution.txt
+	-./threads-c++11_future | diff - threads_solution.txt
+	-./threads-opencl | diff - threads_solution.txt
+
+compare: all
+	time -p ./threads-pthreads
+	time -p ./threads-omp
+	time -p ./threads-c++11
+	-time -p ./threads-c++11_future_no-async
+	-time -p ./threads-c++11_future
+	-time -p ./threads-opencl
+
+clean:
+	-rm trap-omp
+	-rm threads-pthreads
+	-rm threads-omp
+	-rm threads-c++11
+	-rm threads-c++11_future_no-async
+	-rm threads-c++11_future
+	-rm threads-opencl
+	-rm test_cl
+
+test_cl: test_cl.cpp
+	g++ test_cl.cpp -o test_cl -lOpenCL -std=c++11
+
+.PHONY : clean run run2 runoff test test2 time compare all
+
+trap-omp: trap-omp.cpp
+	g++ -o trap-omp trap-omp.cpp -fopenmp
+
+trap-omp_off: trap-omp.cpp
+	g++ -o trap-omp_off trap-omp.cpp
+
+time: trap-omp
+	time -p trap-omp
+	time -p trap-omp 2
+	time -p trap-omp 3
+	time -p trap-omp 4
+	time -p trap-omp 5
+	time -p trap-omp 6
+	time -p trap-omp 7
+	time -p trap-omp 8
+	time -p trap-omp 16
+	time -p trap-omp 32
+	time -p trap-omp 64
+	time -p trap-omp 128
+
+test2: run run2
+
+run: trap-omp
+	./trap-omp
+
+runoff: trap-omp_off
+	./trap-omp_off
+
+run2: trap-omp
+	./trap-omp 2
