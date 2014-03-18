@@ -25,7 +25,28 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "connection.h"
+// Signal handling....
+#include <signal.h>
+#include <errno.h>
+
 using namespace std;
+
+// Error setting for broken pipe...
+bool pipe_Broke = false;
+
+// Signal handlers...
+void signal_callback_handler(int signum)
+{
+   // http://www.yolinux.com/TUTORIALS/C++Signals.html
+   cerr << "Caught signal '" << signum << "': SIGPIPE (13)\n";
+   // Cleanup and close up stuff here...
+   
+   // We want to catch and ignore, so we will just report.
+   pipe_Broke = true;
+   // Terminate the program....
+   //exit(signum)
+}
+// End signal handlers.... (also a portion in main)
 
 // Stopping point for thread creation
 int thread_Stop;
@@ -481,8 +502,69 @@ ostream& operator<< (ostream& os, const Matrix<T>& m)
    return os;
 }
 
+/************************************************************************
+* A function to allow threading from the connections
+***********************************************************************/
+void threadedManager(Connection& net)
+{
+   int tSize[1] = {0};
+   int close[5] = {0, 0, 0, 0, 0};
+   // Receive size
+   if (!net.receiveInt(tSize, 4) || pipe_Broke)
+   {
+      cerr << "Server closed connection\n";
+   }
+   int size = tSize[0];
+   cerr << "SIZE RECEIVED IS: " << size << endl;
+   thread_Stop = size / 4;
+   Matrix<int> matrixA(size);
+   Matrix<int> matrixB(size);
+   Matrix<int> result(size);
+   
+   // Receive matrix A
+   matrixA.readNet(net);
+   //cout << matrixA;
+   /*for (int i = 0; i < mSize; ++i)
+   {
+      if (!net.receiveInt(this->mRows[i]))
+      {
+         cerr << "Server closed connection\n";
+         break;
+      }
+   }*/
+   // Receive matrix B
+   matrixB.readNet(net);
+   //cout << matrixB;
+   /*for (int i = 0; i < mSize; ++i)
+   {
+      if (!net.receiveInt(matrixB.mRows[i]))
+      {
+         cerr << "Server closed connection\n";
+         break;
+      }
+   }*/
+   matrixA.mult(matrixB, result);
+   // Send Result
+   result.writeNet(net);
+   //cout << result;
+   /*for (int i = 0; i < mSize; ++i)
+   {
+      if (!net.sendInt(result.mRows[i]))
+      {
+         cerr << "Server closed connection\n";
+         break;
+      }
+   }*/
+   // Receive close or continue - close and exit for now.
+   net.receiveInt(close, 5 * 4);
+   cout << "CLOSE COMMAND RECEIVED: " << close[0] << endl;
+   //cout << result;
+}
+
 int main(int argc, char* argv[])
 {
+   // Signal Handler Setup
+   signal(SIGPIPE, signal_callback_handler);
    int size = 32;
    string port;
 
@@ -501,60 +583,82 @@ int main(int argc, char* argv[])
    //thread_Stop = atoi(argv[4]);
    
    Connection net;
+   //////////////////////////////////////////////////////////////////////////
+   //////////////////////////////////////////////////////////////////////////
+   ////// Thought: Make the management of the matrix multiplication threaded-
+   ////// Listen for connections, and make a new thread for each one.
+   ////// Will require some modification of connection.h
+   //////////////////////////////////////////////////////////////////////////
+   //////////////////////////////////////////////////////////////////////////
    if (net.serverSetup(port.c_str()))
    {
-      int tSize[1];
-      int close[5];
-      // Receive size
-      if (!net.receiveInt(tSize, 4))
+      cerr << "Net setup!!!\n";
+      // Handle this to close out socket and re-establish...
+      pipe_Broke = false;
+      //Connection child;
+      //while (net.serverConnection(child) != 0)
       {
-         cerr << "Server closed connection\n";
+         cerr << "Got a connection!\n";
+         //threadedManager(child);
+         // To run threaded....
+         //thread newCon = thread(threadedManager, std::ref(child));
+         thread newCon = thread(threadedManager, std::ref(net));
+         //newCon.detach(); // Detach the thread, so that we don't worry about it's cleanup
+         newCon.join(); //For testing and debugging
+         
+         //int tSize[1];
+         //int close[5];
+         //// Receive size
+         //if (!net.receiveInt(tSize, 4) || pipe_Broke)
+         //{
+         //   cerr << "Server closed connection\n";
+         //}
+         //size = tSize[0];
+         //cerr << "SIZE RECEIVED IS: " << size << endl;
+         //thread_Stop = size / 4;
+         //Matrix<int> matrixA(size);
+         //Matrix<int> matrixB(size);
+         //Matrix<int> result(size);
+         //
+         //// Receive matrix A
+         //matrixA.readNet(net);
+         ////cout << matrixA;
+         ///*for (int i = 0; i < mSize; ++i)
+         //{
+         //   if (!net.receiveInt(this->mRows[i]))
+         //   {
+         //      cerr << "Server closed connection\n";
+         //      break;
+         //   }
+         //}*/
+         //// Receive matrix B
+         //matrixB.readNet(net);
+         ////cout << matrixB;
+         ///*for (int i = 0; i < mSize; ++i)
+         //{
+         //   if (!net.receiveInt(matrixB.mRows[i]))
+         //   {
+         //      cerr << "Server closed connection\n";
+         //      break;
+         //   }
+         //}*/
+         //matrixA.mult(matrixB, result);
+         //// Send Result
+         //result.writeNet(net);
+         ////cout << result;
+         ///*for (int i = 0; i < mSize; ++i)
+         //{
+         //   if (!net.sendInt(result.mRows[i]))
+         //   {
+         //      cerr << "Server closed connection\n";
+         //      break;
+         //   }
+         //}*/
+         //// Receive close or continue - close and exit for now.
+         //net.receiveInt(close, 5 * 4);
+         //cout << "CLOSE COMMAND RECEIVED: " << close[0] << endl;
+         ////cout << result;
       }
-      size = tSize[0];
-      cerr << "SIZE RECEIVED IS: " << size << endl;
-      thread_Stop = size / 4;
-      Matrix<int> matrixA(size);
-      Matrix<int> matrixB(size);
-      Matrix<int> result(size);
-      
-      // Receive matrix A
-      matrixA.readNet(net);
-      //cout << matrixA;
-      /*for (int i = 0; i < mSize; ++i)
-      {
-         if (!net.receiveInt(this->mRows[i]))
-         {
-            cerr << "Server closed connection\n";
-            break;
-         }
-      }*/
-      // Receive matrix B
-      matrixB.readNet(net);
-      //cout << matrixB;
-      /*for (int i = 0; i < mSize; ++i)
-      {
-         if (!net.receiveInt(matrixB.mRows[i]))
-         {
-            cerr << "Server closed connection\n";
-            break;
-         }
-      }*/
-      matrixA.mult(matrixB, result);
-      // Send Result
-      result.writeNet(net);
-      //cout << result;
-      /*for (int i = 0; i < mSize; ++i)
-      {
-         if (!net.sendInt(result.mRows[i]))
-         {
-            cerr << "Server closed connection\n";
-            break;
-         }
-      }*/
-      // Receive close or continue - close and exit for now.
-      net.receiveInt(close, 5 * 4);
-      cout << "CLOSE COMMAND RECEIVED: " << close[0] << endl;
-      //cout << result;
    }
    else
    {

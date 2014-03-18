@@ -6,3 +6,4 @@ for ((i = 1; i <= 35; i+=1))do
   exit) | ssh -T -p 215 aus213l$i) &
   #echo ""
 done
+wait

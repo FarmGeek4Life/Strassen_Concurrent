@@ -5,7 +5,7 @@ for ((i = 1; i <= 35; i+=1));do
   #((echo -e 'for PID in $(ps -eo pid,user,cmd | grep "server_leaf" | grep -v "grep" | grep -E -o -e "^[0-9]{1,7}")\n do\n echo "found server_leaf on $(hostname -i)"\n done\n' ; \
   #exit) | ssh -T -p 215 aus213l$i) &
   #(status[$i]=$((echo 'echo "$(ps -eLf | grep -v "grep" | grep -c "server_leaf")"' ; exit) | ssh -T -p 215 aus213l$i)) &
-  ((echo 'COUNT=$(ps -eLf | grep -v "grep" | grep -c "server_leaf"); exit $COUNT'; exit) | ssh -T -p 215 aus213l$i) &
+  ((echo 'COUNT=$(ps -eLf | grep -v "grep" | grep -c "server_leaf"); exit $COUNT'; exit) | ssh -T -p 215 aus213l$i) 2>/dev/null &
   PIDS[$i]=$!
   #echo ""
 done
@@ -17,7 +17,7 @@ for ((i = 1; i <= 35; i+=1));do
    #wait $pid
    wait ${PIDS[$i]}
    status[$i]=$?
-   echo "$i"
+   #echo "$i"
    #i=$i+1
 done
 
@@ -38,5 +38,5 @@ echo "Server map:"
 # This is much cleaner...
 OLD_IFS=$IFS
 IFS=$'\n'
-printf -- '%3s%3s%3s%3s%3s  %3s%3s%3s%3s%3s\n%3s%3s%3s%3s%3s  %3s%3s%3s%3s%3s\n%3s%3s%3s%3s%3s  %3s%3s%3s%3s%3s\n%20s%3s%3s%3s%3s\n' ${status[@]}
+printf -- '%3s%3s%3s%3s%3s  %3s%3s%3s%3s%3s\n\n%3s%3s%3s%3s%3s  %3s%3s%3s%3s%3s\n%3s%3s%3s%3s%3s  %3s%3s%3s%3s%3s\n%3s%3s%3s%3s%3s  %3s%3s%3s%3s%3s\n%20s%3s%3s%3s%3s\n' 1 2 3 4 5 6 7 8 9 10 ${status[@]}
 IFS=$OLD_IFS

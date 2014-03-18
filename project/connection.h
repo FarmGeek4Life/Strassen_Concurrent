@@ -24,9 +24,12 @@ class Connection
 {
    public:
       Connection();
+      Connection(const Connection& toCopy);
+      Connection& operator=(const Connection& toCopy);
       ~Connection();
       int clientSetup(const char* theAddress, const char* thePort);
       int serverSetup(const char* thePort);
+      int serverConnection(Connection& newNet);
       int sendChar(char* toSend);
       int receiveChar(char* received);
       int sendChar(char* toSend, int numBytes);
@@ -77,6 +80,61 @@ Connection::Connection()
    memset(&stSockAddr, '\0', sizeof stSockAddr);
    memset(&hints, 0, sizeof hints);
    stSockAddr1 = NULL;
+   stSockAddr2 = NULL;
+}
+
+/*****************************************************************************
+* Initializes the connection object with standard defaults
+*****************************************************************************/
+Connection::Connection(const Connection& toCopy)
+{
+   sockfdComm = toCopy.sockfdComm;
+   isServer = false; // Don't copy server capabilities to an individual connection.
+                     // This will prevent a connection from closing the listening socket.
+   sockfdListen = -1; // Don't copy server capabilities to an individual connection.
+   in = toCopy.in;
+   primarySockfd = &sockfdComm;
+   port = toCopy.port;
+   //portStr = new char[strlen(toCopy.portStr)];
+   //strcpy(portStr, toCopy.portStr);
+   portStr = NULL;
+   //address = new char[strlen(toCopy.address)];
+   //strcpy(address,toCopy.address);
+   address = NULL;
+   stSockAddr = toCopy.stSockAddr;
+   hints = toCopy.hints;
+   stSockAddr1 = NULL; // These should not be needed.
+   stSockAddr2 = NULL; // These should not be needed.
+}
+
+/*****************************************************************************
+* Initializes the connection object with standard defaults
+*****************************************************************************/
+Connection& Connection::operator=(const Connection& toCopy)
+{
+   sockfdComm = toCopy.sockfdComm;
+   isServer = false; // Don't copy server capabilities to an individual connection.
+                     // This will prevent a connection from closing the listening socket.
+   sockfdListen = -1; // Don't copy server capabilities to an individual connection.
+   in = toCopy.in;
+   primarySockfd = &sockfdComm;
+   port = toCopy.port;
+   if (address != NULL)
+      delete address;
+   if (portStr != NULL)
+      delete portStr;
+   if (stSockAddr1 != NULL)
+      freeaddrinfo(stSockAddr1);
+   //portStr = new char[strlen(toCopy.portStr)];
+   //strcpy(portStr, toCopy.portStr);
+   portStr = NULL;
+   //address = new char[strlen(toCopy.address)];
+   //strcpy(address,toCopy.address);
+   address = NULL;
+   stSockAddr = toCopy.stSockAddr;
+   hints = toCopy.hints;
+   stSockAddr1 = NULL; // These should not be needed.
+   stSockAddr2 = NULL; // These should not be needed.
 }
 
 /*****************************************************************************
@@ -92,8 +150,10 @@ Connection::~Connection()
    }
    if (address != NULL)
       delete address;
-   delete portStr;
-   freeaddrinfo(stSockAddr1);
+   if (portStr != NULL)
+      delete portStr;
+   //if (stSockAddr1 != NULL)
+   //   freeaddrinfo(stSockAddr1);
 }
 
 /*****************************************************************************
@@ -181,6 +241,28 @@ int Connection::serverSetup(const char* thePort)
    //   cerr << "CONNECT SUCCESS!!!!!\n";
    //else
    //   cerr << "CONNECT FAILURE!!!!!\n";
+   return 1;
+}
+
+/*****************************************************************************
+* Gets and returns a new connection socket
+* returns 1 if successful.
+*****************************************************************************/
+int Connection::serverConnection(Connection& newNet)
+{
+   if (!isServer)
+   {
+      cerr << "Not a server!!\n";
+      return 0;
+   }
+   cerr << "Waiting for a connection....\n";
+   if (!(doListen() && doAccept()))
+   {
+      return 0;
+   }
+   cerr << "Got connection!!\n";
+   newNet = *this; //Copy the connection off to the argument object
+   //sockfdComm = -1; // Clear out this copy of the socket so the server doesn't accidentally close it.
    return 1;
 }
 
@@ -448,7 +530,10 @@ int Connection::sendInt(int* toSend, int numBytes)
    int error = 1;
    strError = "send failed";
    //error = send(sockfdComm, toSend, sizeof(toSend), 0);
-   error = send(sockfdComm, toSend, numBytes, 0);
+   //while (error != 0)
+   //{
+      error = send(sockfdComm, toSend, numBytes, 0);
+   //}
    //perror("Send Status");
    //cerr << "Sent |" << toSend << "| in size " << sizeof(toSend) << ", but sent only " << error << " bytes\n";
    return (error >= 0) ? error : 0;

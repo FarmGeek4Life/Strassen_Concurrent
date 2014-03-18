@@ -19,7 +19,7 @@ endif
 # Flags for the C++ preprocessor
 #CPPFLAGS = 
 # Flags for the C++ compiler
-CXXFLAGS = -pthread ${STD} -pedantic
+CXXFLAGS = -pthread ${STD} -pedantic -g
 # For C++ linking:
 # $(CC) $(LDFLAGS) n.o $(LOADLIBES) $(LDLIBS)
 # Linker program: (default cc, aka gcc)
@@ -28,7 +28,7 @@ CC = g++
 # LDFLAGS = -L
 # Library flags for linker: (LOADLIBES same, but deprecated) (use -l)
 # THIS LINE WILL CAUSE DUPLICATIONS, BUT THE DATA IS NEEDED IF *.o IS EVER USED!!!!
-LDLIBS = -pthread ${STD} -pedantic
+LDLIBS = -pthread ${STD} -pedantic -g
 
 ifndef SIZE
   $(warning Please add 'SIZE=[size]' to the command line)
@@ -82,9 +82,11 @@ server_test: server_leaf
 	./server_leaf $(BG_PORT)
 
 dist_test: client_manager server_leaf
-	. ./run_parallel.bash 10021 206 207 208 209 217 218 219 ;\
+	# Make careful note of the line continuation......
+	. ./run_parallel.bash 10021 206 207 208 209 217 218 219 ; \
+	time ./client_manager 64_1.txt 64_2.txt 64; \
+	echo "exited with status '$$?'"
 	#time ./client_manager 64_1.txt 64_2.txt 64 | diff -q - 64_1-2.txt
-	time ./client_manager 64_1.txt 64_2.txt 64
 
 local_test: client_manager server_leaf
 	export BG_COMPUTERS="$(shell hostname -i)"; \

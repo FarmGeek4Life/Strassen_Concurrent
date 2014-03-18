@@ -26,8 +26,24 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "connection.h"
+// Signal handling....
+#include <signal.h>
+#include <errno.h>
 
 using namespace std;
+
+// Signal handlers...
+void signal_callback_handler(int signum)
+{
+   // http://www.yolinux.com/TUTORIALS/C++Signals.html
+   cerr << "Caught signal '" << signum << "': SIGPIPE (13)\n";
+   // Cleanup and close up stuff here...
+   
+   // We want to catch and ignore, so we will just report.
+   // Terminate the program....
+   //exit(signum)
+}
+// End signal handlers.... (also a portion in main)
 
 // Stopping point for thread creation
 int thread_Stop;
@@ -231,21 +247,22 @@ public:
          
          thread t[8];
          Connection* net = new Connection[numComputers];
-         for (int i = 0; i < numComputers; ++i)
-         {
-            if (!net[i].clientSetup(computers[i].c_str(), port.c_str()))
-            {
-               // Report error....
-               cerr << "ERROR: Network connection failed for system '" << computers[i] << "'!!!!: " << net[i].strError << "\n\n";
-            }
-         }
+         //for (int i = 0; i < numComputers; ++i)
+         //{
+         //   cerr << "Opening net for '" << computers[i] << "'\n";
+         //   if (!net[i].clientSetup(computers[i].c_str(), port.c_str()))
+         //   {
+         //      // Report error....
+         //      cerr << "ERROR: Network connection failed for system '" << computers[i] << "'!!!!: " << net[i].strError << "\n\n";
+         //   }
+         //}
          
          // Four quadrants for each matrix being multiplied
          Matrix<T> a00(getQuadrant(0, 0));
          Matrix<T> a01(getQuadrant(0, 1));
          Matrix<T> a10(getQuadrant(1, 0));
          Matrix<T> a11(getQuadrant(1, 1));
-         {
+         //{
          Matrix<T> b00(matrixB.getQuadrant(0, 0));
          Matrix<T> b01(matrixB.getQuadrant(0, 1));
          Matrix<T> b10(matrixB.getQuadrant(1, 0));
@@ -275,7 +292,7 @@ public:
             //std::this_thread::sleep_for(chrono::seconds(1));
             //sleep(2);
             
-         }
+         //}
             
             t[1].join();
             t[2].join();
@@ -320,15 +337,23 @@ public:
     *    and the size must be n x n, where n is a power of 2
     *************************************************************************/
    //Matrix operator*(const Matrix matrixB) const
-   Matrix<T> runParallel(const Matrix<T> matrixB, Matrix<T>& result, string computer, string port, Connection net) const
+   Matrix<T> runParallel(const Matrix<T> matrixB, Matrix<T>& result, string computer, string port, Connection& net) const
    {
+      //////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////
+      ////// Thought: use a mutex to block other threads from using the
+      ////// network connection while this one is still in process...
+      //////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////////////////////////////////////////////
+      //cerr << "Computer Check: '" << computer << "'\n";
       //Matrix result(mSize);
       if (mSize > 1)
       {
          cerr << "STARTING THREAD FOR SYSTEM '" << computer << "'!!!\n";
          //Connection net;
-         //if (net.clientSetup(computer.c_str(), port.c_str()))
+         if (net.clientSetup(computer.c_str(), port.c_str()))
          {
+            bool failed = false;
             int size[1] = {mSize};
             int close[5] = {0, 0, 0, 0, 0};
             // All data must be sent as pointers or arrays!!!
@@ -338,13 +363,15 @@ public:
             {
                cerr << "Server closed connection: " << computer << "\n";
                cerr << "ERROR (" << computer << "): " << net.strError << "\n";
+               failed = true;
             }
             // Send matrix A
             //cerr << "SIZE CHECK!!!!!: " << sizeof(this->mRows[0]) << " should be " << mSize * 4 << endl;
-            if (!this->writeNet(net))
+            if (failed || !this->writeNet(net))
             {
                cerr << "Server closed connection: " << computer << "\n";
                cerr << "ERROR (" << computer << "): " << net.strError << "\n";
+               failed = true;
             }
             /*for (int i = 0; i < mSize; ++i)
             {
@@ -355,10 +382,11 @@ public:
                }
             }*/
             // Send matrix B
-            if (!matrixB.writeNet(net))
+            if (failed || !matrixB.writeNet(net))
             {
                cerr << "Server closed connection: " << computer << "\n";
                cerr << "ERROR (" << computer << "): " << net.strError << "\n";
+               failed = true;
             }
             /*for (int i = 0; i < mSize; ++i)
             {
@@ -369,10 +397,11 @@ public:
                }
             }*/
             // Receive Result
-            if (!result.readNet(net))
+            if (failed || !result.readNet(net))
             {
                cerr << "Server closed connection: " << computer << "\n";
                cerr << "ERROR (" << computer << "): " << net.strError << "\n";
+               failed = true;
             }
             /*for (int i = 0; i < mSize; ++i)
             {
@@ -384,17 +413,17 @@ public:
             }*/
             // Send close or continue - close and exit for now.
             //cerr << result;
-            if (!net.sendInt(close, 5 * 4))
+            if (failed || !net.sendInt(close, 5 * 4))
             {
                cerr << "Server closed connection: " << computer << "\n";
                cerr << "ERROR (" << computer << "): " << net.strError << "\n";
             }
          }
-         //else
-         //{
-         //   // Report error....
-         //   cerr << "ERROR: Network connection failed!!!!: " << net.strError << "\n\n";
-         //}
+         else
+         {
+            // Report error....
+            cerr << "ERROR: Network connection failed!!!!: " << net.strError << "\n\n";
+         }
       }
       else
       {
@@ -476,13 +505,49 @@ void parseEnv(char* envVar, string output[], int& count)
 
 int main(int argc, char* argv[])
 {
+   // Signal Handler Setup
+   signal(SIGPIPE, signal_callback_handler);
    int size = 32;
    ifstream inFile;
    ifstream inFile2;
    string file;
    string file2;
-   char* compList = getenv("BG_COMPUTERS");
-   string port = getenv("BG_PORT");
+   char* compList;
+   string port;
+   // Avoid unknown errors when the environment variables aren't set...
+   try
+   {
+      if (getenv("BG_COMPUTERS") == NULL)
+      {
+         throw 1;
+      }
+      else
+      {
+         compList = getenv("BG_COMPUTERS");
+      }
+   }
+   catch (...)
+   {
+      cerr << "Please set environment variable 'BG_COMPUTERS'!\n";
+      return 1;
+   }
+   try
+   {
+      if (getenv("BG_PORT") == NULL)
+      {
+         throw 2;
+      }
+      else
+      {
+         port = getenv("BG_PORT");
+      }
+   }
+   catch (...)
+   {
+      cerr << "Please set environment variable 'BG_PORT'\n";
+      port = "10021";
+      cerr << "Using port number '10021' for this run.\n";
+   }
    string computers[35];
    int totalComputers = 0;
    if (compList != NULL)
@@ -611,7 +676,7 @@ int main(int argc, char* argv[])
    {
       matrixA.mult(matrixB, result, computers, totalComputers, port);
    }
-   cerr << result;
+   //cerr << result;
    cout << result;
 
    return 0;
