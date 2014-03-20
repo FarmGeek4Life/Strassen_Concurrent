@@ -1,19 +1,24 @@
 /***********************************************************************
 * Connection class header file
 ******************************************************************************/
+
+#ifndef _CONNECTION_H
+#define _CONNECTION_H
+
 #include <iostream>
-#include <iomanip>
-#include <cmath>
+//#include <iomanip>
+//#include <cmath>
 #include <cstring>
-#include <string>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+//#include <string>
+//#include <sys/types.h> //?????? /// These must be getting included in netdb.h and arpa/inet.h
+//#include <sys/socket.h> //??????
+//#include <netinet/in.h> //??????
 #include <netdb.h>
 #include <arpa/inet.h>
-#include <stdio.h>
-#include <stdlib.h>
+//#include <stdio.h>
+//#include <stdlib.h>
 #include <unistd.h>
+#include "errorColors.h"
 
 using namespace std;
 
@@ -25,11 +30,15 @@ class Connection
    public:
       Connection();
       Connection(const Connection& toCopy);
+      Connection(int comSocket);
       Connection& operator=(const Connection& toCopy);
       ~Connection();
       int clientSetup(const char* theAddress, const char* thePort);
       int serverSetup(const char* thePort);
       int serverConnection(Connection& newNet);
+      int serverConnection(int& newSocket);
+      int closeComm();
+      int closeServer();
       int sendChar(char* toSend);
       int receiveChar(char* received);
       int sendChar(char* toSend, int numBytes);
@@ -110,8 +119,29 @@ Connection::Connection(const Connection& toCopy)
 /*****************************************************************************
 * Initializes the connection object with standard defaults
 *****************************************************************************/
+Connection::Connection(int comSocket)
+{
+   isServer = false;
+   sockfdComm = comSocket;
+   sockfdListen = -1;
+   strError = "";
+   primarySockfd = &sockfdComm;
+   port = 0;
+   portStr = NULL;
+   address = NULL;
+   memset(&stSockAddr, '\0', sizeof stSockAddr);
+   memset(&hints, 0, sizeof hints);
+   stSockAddr1 = NULL;
+   stSockAddr2 = NULL;
+}
+
+/*****************************************************************************
+* Initializes the connection object with standard defaults
+*****************************************************************************/
 Connection& Connection::operator=(const Connection& toCopy)
 {
+   // Close an existing socket descriptor...
+   close(sockfdComm);
    sockfdComm = toCopy.sockfdComm;
    isServer = false; // Don't copy server capabilities to an individual connection.
                      // This will prevent a connection from closing the listening socket.
@@ -154,6 +184,39 @@ Connection::~Connection()
       delete portStr;
    //if (stSockAddr1 != NULL)
    //   freeaddrinfo(stSockAddr1);
+}
+
+
+/*****************************************************************************
+* Closes connection and socket
+*****************************************************************************/
+int Connection::closeComm()
+{
+   int status = 0;
+   //close(sockfdListen);
+   status = shutdown(sockfdComm, 2);
+   cerr << Gre << "CLOSED COMM SOCKET!!" << RCol << "\n";
+   // 0: Stop receiving data for this socket. If further data arrives, reject it.
+   // 1: Stop trying to transmit data from this socket. Discard any data waiting to be sent. Stop looking for acknowledgement of data already sent; don't retransmit it if it is lost.
+   // 2: Stop both reception and transmission. 
+   return (status == 0);
+}
+/*****************************************************************************
+* Closes connection and socket
+*****************************************************************************/
+int Connection::closeServer()
+{
+   int status = 0;
+   if (isServer)
+   {
+      //close(sockfdListen);
+      status = shutdown(sockfdListen, 2);
+      cerr << Gre << "CLOSED SERVER SOCKET!!" << RCol << "\n";
+      // 0: Stop receiving data for this socket. If further data arrives, reject it.
+      // 1: Stop trying to transmit data from this socket. Discard any data waiting to be sent. Stop looking for acknowledgement of data already sent; don't retransmit it if it is lost.
+      // 2: Stop both reception and transmission. 
+   }
+   return (status == 0);
 }
 
 /*****************************************************************************
@@ -252,17 +315,39 @@ int Connection::serverConnection(Connection& newNet)
 {
    if (!isServer)
    {
-      cerr << "Not a server!!\n";
+      cerr << On_Red << "Not a server!!" << RCol << "\n";
       return 0;
    }
-   cerr << "Waiting for a connection....\n";
+   cerr << UBlu << "Waiting for a connection...." << RCol << "\n";
    if (!(doListen() && doAccept()))
    {
       return 0;
    }
-   cerr << "Got connection!!\n";
+   cerr << UBlu << "Got connection!!" << RCol << "\n";
    newNet = *this; //Copy the connection off to the argument object
-   //sockfdComm = -1; // Clear out this copy of the socket so the server doesn't accidentally close it.
+   sockfdComm = -1; // Clear out this copy of the socket so the server doesn't accidentally close it.
+   return 1;
+}
+
+/*****************************************************************************
+* Gets and returns a new connection socket
+* returns 1 if successful.
+*****************************************************************************/
+int Connection::serverConnection(int& newSocket)
+{
+   if (!isServer)
+   {
+      cerr << On_Red << "Not a server!!" << RCol << "\n";
+      return 0;
+   }
+   cerr << UBlu << "Waiting for a connection...." << RCol << "\n";
+   if (!(doListen() && doAccept()))
+   {
+      return 0;
+   }
+   cerr << UBlu << "Got connection!!" << RCol << "\n";
+   newSocket = sockfdComm; //Copy the connection off to the argument object
+   sockfdComm = -1; // Clear out this copy of the socket so the server doesn't accidentally close it.
    return 1;
 }
 
@@ -332,6 +417,7 @@ int Connection::reuseableSock()
    int yes = 1;
    int error = 1;
    error = setsockopt(*primarySockfd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(int));
+   error = setsockopt(*primarySockfd,SOL_SOCKET,SO_REUSEPORT,&yes,sizeof(int));
    strError = "setSockOpt";
    //perror("SetSockOpt Status");
    //cerr << "Reusable socket configured with code " << error << "\n";
@@ -531,9 +617,12 @@ int Connection::sendInt(int* toSend, int numBytes)
    strError = "send failed";
    //error = send(sockfdComm, toSend, sizeof(toSend), 0);
    //while (error != 0)
+   //int block = numBytes / 64;
+   //for (int i = 0; i < numBytes; i += block)
    //{
-      error = send(sockfdComm, toSend, numBytes, 0);
+   //   error = send(sockfdComm, &(toSend[i]), 64 < (numBytes - i) ? 64 : (numBytes - i), 0);
    //}
+   error = send(sockfdComm, toSend, numBytes, 0);
    //perror("Send Status");
    //cerr << "Sent |" << toSend << "| in size " << sizeof(toSend) << ", but sent only " << error << " bytes\n";
    return (error >= 0) ? error : 0;
@@ -548,9 +637,17 @@ int Connection::receiveInt(int* received, int numBytes)
    int error = 1;
    strError = "receive failed";
    //error = recv(sockfdComm, received, sizeof(received), 0);
+   //while (error != 0)
+   int block = numBytes / 64;
+   //for (int i = 0; i < numBytes; i += block)
+   //{
+   //   error = recv(sockfdComm, &(received[i]), 64 < (numBytes - i) ? 64 : (numBytes - i), 0);
+   //}
    error = recv(sockfdComm, received, numBytes, 0);
    //perror("Receive Status");
    strError = error == 0 ? "socket closed" : "receive failed";
    //cerr << "Received |" << received << "| in size " << sizeof(received) << ", but sent only " << error << " bytes\n";
    return (error > 0) ? error : 0;
 }
+
+#endif //_CONNECTION_H

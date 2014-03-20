@@ -12,11 +12,13 @@ done
 #wait
 
 #i=1;
+count=0
 #for pid in ${PIDS[@]}; do
 for ((i = 1; i <= 35; i+=1));do
    #wait $pid
    wait ${PIDS[$i]}
    status[$i]=$?
+   let count+=${status[$i]}
    #echo "$i"
    #i=$i+1
 done
@@ -40,3 +42,5 @@ OLD_IFS=$IFS
 IFS=$'\n'
 printf -- '%3s%3s%3s%3s%3s  %3s%3s%3s%3s%3s\n\n%3s%3s%3s%3s%3s  %3s%3s%3s%3s%3s\n%3s%3s%3s%3s%3s  %3s%3s%3s%3s%3s\n%3s%3s%3s%3s%3s  %3s%3s%3s%3s%3s\n%20s%3s%3s%3s%3s\n' 1 2 3 4 5 6 7 8 9 10 ${status[@]}
 IFS=$OLD_IFS
+echo
+echo "Total servers running: $count"
