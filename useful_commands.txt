@@ -1,0 +1,5 @@
+To clean up the git folder so that a pull will work properly:
+Roll all files back to last commit:
+git reset --hard
+Remove all added files that did not exist in last commit:
+git clean -fdx
