@@ -61,14 +61,23 @@ std::mutex oneByOne;
 * A function to allow threading from the connections
 ***********************************************************************/
 //void threadedManager(Connection& net)
-void threadedManager(int socket)
+void threadedManager(int socket, unsigned int id)
 {
    // Limit execution of this block of code....
    // Automatically releases when leaving scope
-   std::lock_guard<std::mutex> lock(oneByOne);
+   //std::lock_guard<std::mutex> lock(oneByOne);
+   cerr << Gre << "STARTING EXECUTION: THREAD " << id << RCol << "\n";
    Connection net(socket);
+   int threadId = 0;
    int tSize[1] = {0};
    int close[5] = {0, 0, 0, 0, 0};
+   // Receive threadId
+   cerr << Gre << "RECEIVING THREAD ID..." << RCol << "\n";
+   if (!net.receiveInt(&threadId, 4) || pipe_Broke)
+   {
+      cerr << Red << "Server closed connection\n";
+      cerr << "ERROR: " << net.strError << RCol << endl;
+   }
    // Receive size
    cerr << Gre << "RECEIVING SIZE..." << RCol << "\n";
    if (!net.receiveInt(tSize, 4) || pipe_Broke)
@@ -130,10 +139,11 @@ void threadedManager(int socket)
       }
    }*/
    // Receive close or continue - close and exit for now.
-   net.receiveInt(close, 5 * 4);
-   cout << Gre << "CLOSE COMMAND RECEIVED: " << close[0] << RCol << endl;
+   //net.receiveInt(close, 5 * 4);
+   //cout << Gre << "CLOSE COMMAND RECEIVED: " << close[0] << RCol << endl;
    //cout << result;
    net.closeComm();
+   cerr << Gre << "FINISHING EXECUTION: THREAD " << id << ", manager thread " << threadId << RCol << "\n";
 }
 
 int main(int argc, char* argv[])
@@ -175,6 +185,7 @@ int main(int argc, char* argv[])
       toSleep.tv_sec = 0;
       toSleep.tv_nsec = 200000000;
       int newSocket = 0;
+      unsigned int threadCounter = 0;
       //while (net.serverConnection(child) != 0)
       while (net.serverConnection(newSocket) != 0)
       {
@@ -183,7 +194,7 @@ int main(int argc, char* argv[])
          // To run threaded....
          //thread newCon = thread(threadedManager, std::ref(child));
          //thread newCon = thread(threadedManager, child);
-         thread newCon = thread(threadedManager, newSocket);
+         thread newCon = thread(threadedManager, newSocket, threadCounter++);
          newCon.detach(); // Detach the thread, so that we don't worry about it's cleanup
          //thread newCon = thread(threadedManager, std::ref(net));
          //newCon.join(); //For testing and debugging

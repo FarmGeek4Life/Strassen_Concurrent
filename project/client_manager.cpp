@@ -216,28 +216,28 @@ int main(int argc, char* argv[])
    }
    //cout << (matrixA * matrixB);
    Matrix<int> result(size);
-   if (totalComputers == 1)
-   {
-      //matrixA.runParallel(matrixB, result, computers[0], port);
-      
-      Connection net;
-      if (net.clientSetup(computers[0].c_str(), port.c_str()))
-      {
-         //thread t = thread(&Matrix<int>::runParallel, matrixA, matrixB, std::ref(result), computers[0], port, std::ref(net));
-         thread t = thread(&Matrix<int>::runParallel, matrixA, matrixB, std::ref(result), computers[0], port);
-         t.join();
-      }
-      else
-      {
-         // Report error....
-         cerr << Red << "ERROR: Network connection failed for system '" << computers[0] << "'!!!!: " << net.strError << RCol << "\n\n";
-         *NetError = true;
-      }
-   }
-   else
-   {
+   //if (totalComputers == 1)
+   //{
+   //   //matrixA.runParallel(matrixB, result, computers[0], port);
+   //   
+   //   Connection net;
+   //   if (net.clientSetup(computers[0].c_str(), port.c_str()))
+   //   {
+   //      //thread t = thread(&Matrix<int>::runParallel, matrixA, matrixB, std::ref(result), computers[0], port, std::ref(net));
+   //      thread t = thread(&Matrix<int>::runParallel, matrixA, matrixB, std::ref(result), computers[0], port);
+   //      t.join();
+   //   }
+   //   else
+   //   {
+   //      // Report error....
+   //      cerr << Red << "ERROR: Network connection failed for system '" << computers[0] << "'!!!!: " << net.strError << RCol << "\n\n";
+   //      *NetError = true;
+   //   }
+   //}
+   //else
+   //{
       matrixA.mult_ThreadFarming(matrixB, result, computers, totalComputers, port);
-   }
+   //}
    if (*NetError && size < 128)
    {
       cerr << result;

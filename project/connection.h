@@ -298,8 +298,8 @@ int Connection::serverSetup(const char* thePort)
    //else
    //   cerr << "BIND FAILURE!!!!!\n";
    
-   if (!(doListen() && doAccept()))
-      return 0;
+   //if (!(doListen() && doAccept()))
+   //   return 0;
    //if (*primarySockfd != NULL)
    //   cerr << "CONNECT SUCCESS!!!!!\n";
    //else

@@ -204,7 +204,6 @@ public:
       return result;
    }
    
-   
    // Output the entire matrix on error:
    static bool NetError;
    // Stopping point for thread creation
@@ -266,7 +265,7 @@ public:
          
          // Split for the thread number optimization
          // It makes no sense to split into smaller chunks for 7 computers
-         if (mSize > thread_Stop && numComputers != 7)
+         if (mSize > thread_Stop && numComputers != 7 && numComputers != 1)
          {
             t[1] = thread(&Matrix<T>::mult_ThreadFarming, (a00 + a11), (b00 + b11), std::ref(m1), computers, numComputers, port);
             t[2] = thread(&Matrix<T>::mult_ThreadFarming, (a10 + a11), (b00)      , std::ref(m2), computers, numComputers, port);
@@ -278,7 +277,7 @@ public:
          }
          else
          {
-            int i = 0;
+            //int i = 0;
             //t[1] = thread(&Matrix<T>::runParallel, (a00 + a11), (b00 + b11), std::ref(m1), computers[i++ % numComputers], port, std::ref(net[0]));
             //t[2] = thread(&Matrix<T>::runParallel, (a10 + a11), (b00)      , std::ref(m2), computers[i++ % numComputers], port, std::ref(net[1]));
             //t[3] = thread(&Matrix<T>::runParallel,  a00       , (b01 - b11), std::ref(m3), computers[i++ % numComputers], port, std::ref(net[2]));
@@ -289,13 +288,13 @@ public:
             // New scope for the mutex?
             //{
             std::lock_guard<std::mutex> lock(sysCounter_Mutex);
-            t[1] = thread(&Matrix<T>::runParallel, (a00 + a11), (b00 + b11), std::ref(m1), computers[i++ % numComputers], port);
-            t[2] = thread(&Matrix<T>::runParallel, (a10 + a11), (b00)      , std::ref(m2), computers[i++ % numComputers], port);
-            t[3] = thread(&Matrix<T>::runParallel,  a00       , (b01 - b11), std::ref(m3), computers[i++ % numComputers], port);
-            t[4] = thread(&Matrix<T>::runParallel,  a11       , (b10 - b00), std::ref(m4), computers[i++ % numComputers], port);
-            t[5] = thread(&Matrix<T>::runParallel, (a00 + a01), (b11)      , std::ref(m5), computers[i++ % numComputers], port);
-            t[6] = thread(&Matrix<T>::runParallel, (a10 - a00), (b00 + b01), std::ref(m6), computers[i++ % numComputers], port);
-            t[7] = thread(&Matrix<T>::runParallel, (a01 - a11), (b10 + b11), std::ref(m7), computers[i++ % numComputers], port);
+            t[1] = thread(&Matrix<T>::runParallel, (a00 + a11), (b00 + b11), std::ref(m1), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
+            t[2] = thread(&Matrix<T>::runParallel, (a10 + a11), (b00)      , std::ref(m2), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
+            t[3] = thread(&Matrix<T>::runParallel,  a00       , (b01 - b11), std::ref(m3), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
+            t[4] = thread(&Matrix<T>::runParallel,  a11       , (b10 - b00), std::ref(m4), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
+            t[5] = thread(&Matrix<T>::runParallel, (a00 + a01), (b11)      , std::ref(m5), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
+            t[6] = thread(&Matrix<T>::runParallel, (a10 - a00), (b00 + b01), std::ref(m6), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
+            t[7] = thread(&Matrix<T>::runParallel, (a01 - a11), (b10 + b11), std::ref(m7), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
             //std::mutex::unlock(sysCounter_Mutex);
             //}
          }   
@@ -348,7 +347,8 @@ public:
     *************************************************************************/
    //Matrix operator*(const Matrix matrixB) const
    //Matrix<T> runParallel(const Matrix<T> matrixB, Matrix<T>& result, string computer, string port, Connection& net) const
-   Matrix<T> runParallel(const Matrix<T> matrixB, Matrix<T>& result, string computer, string port) const
+   //Matrix<T> runParallel(const Matrix<T> matrixB, Matrix<T>& result, string computer, string port) const
+   Matrix<T> runParallel(const Matrix<T> matrixB, Matrix<T>& result, string computer, string port, int id) const
    {
       //////////////////////////////////////////////////////////////////////////
       //////////////////////////////////////////////////////////////////////////
@@ -360,15 +360,24 @@ public:
       //Matrix result(mSize);
       if (mSize > 1)
       {
-         cerr << Gre << "STARTING THREAD FOR SYSTEM '" << computer << "'!!!" << RCol << "\n";
+         cerr << Gre << "STARTING THREAD " << id << " FOR SYSTEM '" << computer << "'!!!" << RCol << "\n";
          Connection net;
          if (net.clientSetup(computer.c_str(), port.c_str()))
          {
+            cerr << UPur << "THREAD " << id << " FOR SYSTEM '" << computer << "': Got Connection!!!" << RCol << "\n";
             bool failed = false;
             int size[1] = {mSize};
             int close[5] = {0, 0, 0, 0, 0};
             // All data must be sent as pointers or arrays!!!
             // SHOULD PROBABLY CHANGE TO THROWING AND CATCHING ERRORS!!!!!
+            // Send thread id (for debugging purposes)
+            cerr << Gre << "SENDING THEAD ID " << id << ": '" << computer << "'" << RCol << "\n";
+            if (!net.sendInt(&id, 4))
+            {
+               cerr << Red << "Server closed connection: " << computer << "\n";
+               cerr << "ERROR (" << computer << "): " << net.strError << RCol << "\n";
+               failed = true;
+            }
             // Send size
             cerr << Gre << "SENDING SIZE: '" << computer << "'" << RCol << "\n";
             if (!net.sendInt(size, 4))
@@ -429,11 +438,11 @@ public:
             }*/
             // Send close or continue - close and exit for now.
             //cerr << result;
-            if (failed || !net.sendInt(close, 5 * 4))
+            /*if (failed || !net.sendInt(close, 5 * 4))
             {
                cerr << Red << "Server closed connection: " << computer << "\n";
                cerr << "ERROR (" << computer << "): " << net.strError << RCol << "\n";
-            }
+            }*/
             net.closeComm();
             if (failed)
             {
@@ -452,7 +461,7 @@ public:
          // Assume a matrix of size 1
          result[0][0] = mRows[0][0] * matrixB[0][0];
       }
-      cerr << Gre << "EXITING THREAD FOR SYSTEM '" << computer << "'!!!" << RCol  << "\n";
+      cerr << Gre << "EXITING THREAD " << id << " FOR SYSTEM '" << computer << "'!!!" << RCol  << "\n";
       return result;
    }
    

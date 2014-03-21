@@ -76,7 +76,8 @@ client_test: client_manager
 	@echo "For example, |export BG_PORT='xxxx'|"
 	export BG_COMPUTERS="$(BG_COMPUTERS)"; \
 	export BG_PORT="$(BG_PORT)"; \
-	time ./client_manager matrices/$(TEST_SIZE)_1.txt matrices/$(TEST_SIZE)_2.txt $(TEST_SIZE) | diff -qs - matrices/$(TEST_SIZE)_1-2.txt
+	time ./client_manager /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
+	#time ./client_manager matrices/$(TEST_SIZE)_1.txt matrices/$(TEST_SIZE)_2.txt $(TEST_SIZE) | diff -qs - matrices/$(TEST_SIZE)_1-2.txt
 	#time ./client_manager matrices/16_1.txt  matrices/16_2.txt  16  | diff -qs - matrices/16_1-2.txt
 	#time ./client_manager matrices/32_1.txt  matrices/32_2.txt  32  | diff -qs - matrices/32_1-2.txt
 	#time ./client_manager matrices/64_1.txt  matrices/64_2.txt  64  | diff -qs - matrices/64_1-2.txt
@@ -166,8 +167,8 @@ create_big_fast: generator strassen_int_opt
 	-@( [ ! -d /tmp/brysoncg ] && mkdir /tmp/brysoncg ) || true
 	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_1.txt ) || true
 	-@( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] && ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) \
-	> /tmp/brysoncg/$(SIZE)_1-2.txt ) || true
+	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] && time (./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) \
+	> /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
 	# Final check: make sure they all exist, or fail and exit.
 	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
 	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \
@@ -181,6 +182,13 @@ compare_big: create_big standard standard_noThread strassen_int_opt strassen_int
 	-time ./standard /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
 	-time ./standard_noThread /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
 	-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
+	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
+
+compare_big_fast_s: create_big_fast strassen_int_opt strassen_int_opt2
+#ifndef SIZE
+#  $(warning Please add 'SIZE=[size]' to the command line)
+#endif
+	#-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
 	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
 
 compare_big_fast: create_big_fast strassen_int_opt strassen_int_opt2
