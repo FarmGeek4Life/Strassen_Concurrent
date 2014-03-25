@@ -62,22 +62,33 @@ public:
 
    Matrix<T>& operator=(const Matrix<T>& matrixB)
    {
-      for (int i = 0; i < mSize; i++)
+      if (mSize != matrixB.getSize())
       {
-         delete [] mRows[i];
+         for (int i = 0; i < mSize; i++)
+         {
+            delete [] mRows[i];
+         }
+         delete [] mRows;
+         
+         mSize = matrixB.getSize();
+         
+         mRows = new T*[mSize];
+         for (int i = 0; i < mSize; i++)
+         {
+            mRows[i] = new T[mSize];
+            for (int j = 0; j < mSize; ++j)
+               mRows[i][j] = matrixB.mRows[i][j];
+         }
       }
-      delete [] mRows;
-
-      mSize = matrixB.getSize();
-
-      mRows = new T*[mSize];
-      for (int i = 0; i < mSize; i++)
-      {  
-         mRows[i] = new T[mSize];  
-         for (int j = 0; j < mSize; ++j)  
-            mRows[i][j] = matrixB.mRows[i][j];  
-      }  
-      return *this;  
+      else
+      {
+         for (int i = 0; i < mSize; i++)
+         {
+            for (int j = 0; j < mSize; ++j)
+               mRows[i][j] = matrixB.mRows[i][j];
+         }
+      }
+      return *this;
    }  
 
    ~Matrix<T>()
@@ -178,6 +189,11 @@ public:
    }
    
    /**************************************************************************
+   ***************************************************************************
+   ** Can possibly increase speed here - make a constructor.                **
+   ***************************************************************************
+   **************************************************************************/
+   /**************************************************************************
     * Get the specified quadrant of the Matrix
     *************************************************************************/
    Matrix<T> getQuadrant(int row, int col) const
@@ -216,10 +232,8 @@ public:
     * The input matrices must be equal in size and square, 
     *    and the size must be n x n, where n is a power of 2
     *************************************************************************/
-   //Matrix operator*(const Matrix matrixB) const
    Matrix<T> mult_ThreadFarming(const Matrix<T>& matrixB, Matrix<T>& result, string computers[], int numComputers, string port) const
    {
-      //Matrix result(mSize);
       if (mSize > 1)
       {
          // Temporary Matrices to hold the 7 multiplication results
@@ -232,16 +246,6 @@ public:
          Matrix<T> m7(mSize / 2);
          
          thread t[8];
-         //Connection* net = new Connection[numComputers];
-         //for (int i = 0; i < numComputers; ++i)
-         //{
-         //   cerr << "Opening net for '" << computers[i] << "'\n";
-         //   if (!net[i].clientSetup(computers[i].c_str(), port.c_str()))
-         //   {
-         //      // Report error....
-         //      cerr << "ERROR: Network connection failed for system '" << computers[i] << "'!!!!: " << net[i].strError << "\n\n";
-         //   }
-         //}
          
          // Four quadrants for each matrix being multiplied
          Matrix<T> a00(getQuadrant(0, 0));
@@ -277,53 +281,30 @@ public:
          }
          else
          {
-            //int i = 0;
-            //t[1] = thread(&Matrix<T>::runParallel, (a00 + a11), (b00 + b11), std::ref(m1), computers[i++ % numComputers], port, std::ref(net[0]));
-            //t[2] = thread(&Matrix<T>::runParallel, (a10 + a11), (b00)      , std::ref(m2), computers[i++ % numComputers], port, std::ref(net[1]));
-            //t[3] = thread(&Matrix<T>::runParallel,  a00       , (b01 - b11), std::ref(m3), computers[i++ % numComputers], port, std::ref(net[2]));
-            //t[4] = thread(&Matrix<T>::runParallel,  a11       , (b10 - b00), std::ref(m4), computers[i++ % numComputers], port, std::ref(net[3]));
-            //t[5] = thread(&Matrix<T>::runParallel, (a00 + a01), (b11)      , std::ref(m5), computers[i++ % numComputers], port, std::ref(net[4]));
-            //t[6] = thread(&Matrix<T>::runParallel, (a10 - a00), (b00 + b01), std::ref(m6), computers[i++ % numComputers], port, std::ref(net[5]));
-            //t[7] = thread(&Matrix<T>::runParallel, (a01 - a11), (b10 + b11), std::ref(m7), computers[i++ % numComputers], port, std::ref(net[6]));
-            // New scope for the mutex?
-            //{
+            // Mutex: control the access to the system counter (sysCounter) for even distribution
             std::lock_guard<std::mutex> lock(sysCounter_Mutex);
-            t[1] = thread(&Matrix<T>::runParallel, (a00 + a11), (b00 + b11), std::ref(m1), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
-            t[2] = thread(&Matrix<T>::runParallel, (a10 + a11), (b00)      , std::ref(m2), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
-            t[3] = thread(&Matrix<T>::runParallel,  a00       , (b01 - b11), std::ref(m3), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
-            t[4] = thread(&Matrix<T>::runParallel,  a11       , (b10 - b00), std::ref(m4), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
-            t[5] = thread(&Matrix<T>::runParallel, (a00 + a01), (b11)      , std::ref(m5), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
-            t[6] = thread(&Matrix<T>::runParallel, (a10 - a00), (b00 + b01), std::ref(m6), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
-            t[7] = thread(&Matrix<T>::runParallel, (a01 - a11), (b10 + b11), std::ref(m7), computers[sysCounter % numComputers], port, sysCounter); ++sysCounter; usleep(50000); // Sleep 50 milliseconds
-            //std::mutex::unlock(sysCounter_Mutex);
-            //}
+            t[1] = thread(&Matrix<T>::runParallel, (a00 + a11), (b00 + b11), std::ref(m1), computers[sysCounter % numComputers], port, sysCounter++);
+            t[2] = thread(&Matrix<T>::runParallel, (a10 + a11), (b00)      , std::ref(m2), computers[sysCounter % numComputers], port, sysCounter++);
+            t[3] = thread(&Matrix<T>::runParallel,  a00       , (b01 - b11), std::ref(m3), computers[sysCounter % numComputers], port, sysCounter++);
+            t[4] = thread(&Matrix<T>::runParallel,  a11       , (b10 - b00), std::ref(m4), computers[sysCounter % numComputers], port, sysCounter++);
+            t[5] = thread(&Matrix<T>::runParallel, (a00 + a01), (b11)      , std::ref(m5), computers[sysCounter % numComputers], port, sysCounter++);
+            t[6] = thread(&Matrix<T>::runParallel, (a10 - a00), (b00 + b01), std::ref(m6), computers[sysCounter % numComputers], port, sysCounter++);
+            t[7] = thread(&Matrix<T>::runParallel, (a01 - a11), (b10 + b11), std::ref(m7), computers[sysCounter % numComputers], port, sysCounter++);
          }   
-            //std::this_thread::sleep_for(chrono::seconds(1));
-            //sleep(2);
-            
+         // End special scope for memory savings
          }
             
-            t[1].join();
-            t[2].join();
-            t[3].join();
-            t[4].join();
-            t[5].join();
-            t[6].join();
-            t[7].join();
-         //}
-         //else
-         //{
-         //   (a00 + a11).mult (b00 + b11, m1);
-         //   (a10 + a11).mult (b00      , m2);
-         //    a00       .mult (b01 - b11, m3);
-         //    a11       .mult (b10 - b00, m4);
-         //   (a00 + a01).mult (b11      , m5);
-         //   (a10 - a00).mult (b00 + b01, m6);
-         //   (a01 - a11).mult (b10 + b11, m7);
-         //}
+         t[1].join();
+         t[2].join();
+         t[3].join();
+         t[4].join();
+         t[5].join();
+         t[6].join();
+         t[7].join();
          
          // Use the 7 multiplication results to get the results for each quadrant
          // Save on memory usage by reusing one set of quadrants
+         // Also saves on time - no de/reallocation
          a00 = m1 + m4 - m5 + m7;
          a01 = m3 + m5;
          a10 = m2 + m4;
@@ -372,7 +353,7 @@ public:
             // SHOULD PROBABLY CHANGE TO THROWING AND CATCHING ERRORS!!!!!
             // Send thread id (for debugging purposes)
             cerr << Gre << "SENDING THEAD ID " << id << ": '" << computer << "'" << RCol << "\n";
-            if (!net.sendInt(&id, 4))
+            if (!net.sendData(&id, 4))
             {
                cerr << Red << "Server closed connection: " << computer << "\n";
                cerr << "ERROR (" << computer << "): " << net.strError << RCol << "\n";
@@ -380,7 +361,7 @@ public:
             }
             // Send size
             cerr << Gre << "SENDING SIZE: '" << computer << "'" << RCol << "\n";
-            if (!net.sendInt(size, 4))
+            if (!net.sendData(size, 4))
             {
                cerr << Red << "Server closed connection: " << computer << "\n";
                cerr << "ERROR (" << computer << "): " << net.strError << RCol << "\n";
@@ -808,7 +789,7 @@ int Matrix<T>::thread_Stop = 0;
 template <class T>
 int Matrix<T>::sysCounter = 0;
 template <class T>
-std::mutex Matrix<T>::sysCounter_Mutex;// = mutex();
+std::mutex Matrix<T>::sysCounter_Mutex;
 
 template <class T>
 istream& operator>>(istream& is, const Matrix<T>& m)

@@ -69,7 +69,11 @@ std::mutex byMultiples[10];
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-
+/************************************************************************
+*************************************************************************
+** Should I put this into the matrix header file????                   **
+*************************************************************************
+************************************************************************/
 /************************************************************************
 * A function to allow threading from the connections
 ***********************************************************************/
@@ -95,16 +99,17 @@ void threadedManager(int socket, unsigned int id)
    int threadId = 0;
    int tSize[1] = {0};
    int close[5] = {0, 0, 0, 0, 0};
+   // Combine these into one read....
    // Receive threadId
    cerr << Gre << "RECEIVING THREAD ID..." << RCol << "\n";
-   if (!net.receiveInt(&threadId, 4) || pipe_Broke)
+   if (!net.receiveData(&threadId, 4) || pipe_Broke)
    {
       cerr << Red << "Server closed connection\n";
       cerr << "ERROR: " << net.strError << RCol << endl;
    }
    // Receive size
    cerr << Gre << "RECEIVING SIZE..." << RCol << "\n";
-   if (!net.receiveInt(tSize, 4) || pipe_Broke)
+   if (!net.receiveData(tSize, 4) || pipe_Broke)
    {
       cerr << Red << "Server closed connection\n";
       cerr << "ERROR: " << net.strError << RCol << endl;
@@ -115,6 +120,7 @@ void threadedManager(int socket, unsigned int id)
    
    ///////////////////////////////////////////////////////////////////////////////////////////////
    ////////////// WORK: Change the value used according to the size of the input matrices (memory)
+   ////////////// Also adapt using the memory size of the data type.....
    std::lock_guard<std::mutex> lock(byMultiples[id % 3]);
    ///////////////////////////////////////////////////////////////////////////////////////////////
    //Matrix<int> matrixA(size);

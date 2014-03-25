@@ -1,9 +1,4 @@
 #!/bin/bash
-# Using grep -v 'text' will ignore all lines that have 'text' on them
-
-# write a script that will ssh or telnet into every computer in the lab and run 'who' in the terminal, to see who is actively logged in and using the computer.
-# also could write a script that will run any following command on the computer to do quick lab analysis.
-# refer to nss.sh and asdf.sh for some tips.
 
 # linux lab computers are from 1 to 35
 for ((i = 1; i <= 35; i+=1))do
