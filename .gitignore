@@ -1,0 +1,7 @@
+project/client_manager
+project/generator
+project/server_leaf
+project/standard
+project/standard_noThread
+project/strassen_int_opt
+project/strassen_int_opt2
