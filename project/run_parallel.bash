@@ -32,4 +32,11 @@ for ((i = 1; i < $#; i+=1))do
   #sleep 1
   #echo ""
 done
+
+# Clean up the variables to not leave them as artifacts in the shell environment
+unset args
+unset port
+unset computers
+unset i
+# Allow the servers to all start up
 sleep 2

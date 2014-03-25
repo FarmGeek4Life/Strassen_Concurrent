@@ -8,6 +8,8 @@ if [ $# -lt 2 ]; then
   exit
 fi
 
+(cleanup_servers_failsafe.bash)
+
 args=("$@")
 port=${args[0]}
 if [ ${args[1]} -gt 34 ]; then
@@ -57,4 +59,18 @@ for i in ${computers2[@]}; do
   #sleep 1
   #echo ""
 done
+# Clean up the variables to not leave them as artifacts in the shell environment
+unset args
+unset port
+unset this_comp
+unset num
+unset computers
+unset comp_pref
+unset count
+unset comp_list
+unset temp
+unset computers2
+unset i
+
+# Allow the servers to all start up
 sleep 1

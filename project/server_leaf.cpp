@@ -16,6 +16,8 @@
 #include <thread>
 // Trying mutual exclusion....
 #include <mutex>
+// Condition variable
+//#include <condition_variable>
 //#include <cstring>
 //#include <string>
 //#include <unistd.h>
@@ -52,7 +54,18 @@ void signal_callback_handler(int signum)
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 // Declare the mutex....
-std::mutex oneByOne;
+//std::mutex oneByOne;
+//std::mutex threeByThree[3];
+std::mutex byMultiples[10];
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+// Declare the condition variable(s)....
+//std::mutex limitMultiple;
+//std::condition_variable doMultiple;
+//int multCounter = 0;
+//std::mutex counterLock;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
@@ -61,11 +74,22 @@ std::mutex oneByOne;
 * A function to allow threading from the connections
 ***********************************************************************/
 //void threadedManager(Connection& net)
+template <class T>
 void threadedManager(int socket, unsigned int id)
 {
    // Limit execution of this block of code....
    // Automatically releases when leaving scope
+   // Takes a little bit longer in real time, but will reduce context switches on the systems....
    //std::lock_guard<std::mutex> lock(oneByOne);
+   //std::lock_guard<std::mutex> lock(threeByThree[id % 3]);
+   // Use a condition variable instead??
+   //std::unique_lock<std::mutex> myLock(limitMultiple);
+   //doMultiple.wait(myLock, []{return multCounter < 3;});
+   //{
+   //std::lock_guard<std::mutex> lock(counterLock);
+   //++multCounter;
+   //}
+   
    cerr << Gre << "STARTING EXECUTION: THREAD " << id << RCol << "\n";
    Connection net(socket);
    int threadId = 0;
@@ -87,9 +111,18 @@ void threadedManager(int socket, unsigned int id)
    }
    int size = tSize[0];
    cerr << Gre << "SIZE RECEIVED IS: " << size << RCol << endl;
-   Matrix<int> matrixA(size);
-   Matrix<int> matrixB(size);
-   Matrix<int> result(size);
+   int threadMax = 3; // default - works well for many sizes.
+   
+   ///////////////////////////////////////////////////////////////////////////////////////////////
+   ////////////// WORK: Change the value used according to the size of the input matrices (memory)
+   std::lock_guard<std::mutex> lock(byMultiples[id % 3]);
+   ///////////////////////////////////////////////////////////////////////////////////////////////
+   //Matrix<int> matrixA(size);
+   //Matrix<int> matrixB(size);
+   //Matrix<int> result(size);
+   Matrix<T> matrixA(size);
+   Matrix<T> matrixB(size);
+   Matrix<T> result(size);
    matrixA.thread_Stop = size / 4;
    
    // Receive matrix A
@@ -144,6 +177,11 @@ void threadedManager(int socket, unsigned int id)
    //cout << result;
    net.closeComm();
    cerr << Gre << "FINISHING EXECUTION: THREAD " << id << ", manager thread " << threadId << RCol << "\n";
+   //{
+   //std::lock_guard<std::mutex> lock(counterLock);
+   //--multCounter;
+   //}
+   //doMultiple.notify_one();
 }
 
 int main(int argc, char* argv[])
@@ -194,7 +232,7 @@ int main(int argc, char* argv[])
          // To run threaded....
          //thread newCon = thread(threadedManager, std::ref(child));
          //thread newCon = thread(threadedManager, child);
-         thread newCon = thread(threadedManager, newSocket, threadCounter++);
+         thread newCon = thread(threadedManager<int>, newSocket, threadCounter++);
          newCon.detach(); // Detach the thread, so that we don't worry about it's cleanup
          //thread newCon = thread(threadedManager, std::ref(net));
          //newCon.join(); //For testing and debugging

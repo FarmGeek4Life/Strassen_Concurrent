@@ -716,7 +716,8 @@ public:
          /**/
          for (int j = 0; j < mSize; ++j)
          {
-            if (!net.receiveInt(&(this->mRows[i][j]), (int)sizeof(T)))
+            //if (!net.receiveInt(&(this->mRows[i][j]), (int)sizeof(T)))
+            if (!net.receiveData(&(this->mRows[i][j]), sizeof(T)))
             {
                cerr << Red << "Server closed connection\n";
                cerr << "ERROR: " << net.strError << RCol << endl;
@@ -768,7 +769,8 @@ public:
          /**/
          for (int j = 0; j < mSize; ++j)
          {
-            if (!net.sendInt(&(this->mRows[i][j]), (int)sizeof(T)))
+            //if (!net.sendInt(&(this->mRows[i][j]), (int)sizeof(T)))
+            if (!net.sendData(&(this->mRows[i][j]), sizeof(T)))
             {
                cerr << Red << "Server closed connection\n";
                cerr << "ERROR: " << net.strError << RCol << endl;

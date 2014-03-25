@@ -49,6 +49,13 @@ class Connection
       int receiveShort(short* received, int numBytes);
       int sendInt(int* toSend, int numBytes);
       int receiveInt(int* received, int numBytes);
+      
+      template <class T>
+      int sendData(T* toSend, unsigned int numBytes);
+      
+      template <class T>
+      int receiveData(T* received, unsigned int numBytes);
+      
       string strError;
       
    private:
@@ -633,6 +640,51 @@ int Connection::sendInt(int* toSend, int numBytes)
 * returns > 1 if successful.
 *****************************************************************************/
 int Connection::receiveInt(int* received, int numBytes)
+{
+   int error = 1;
+   strError = "receive failed";
+   //error = recv(sockfdComm, received, sizeof(received), 0);
+   //while (error != 0)
+   int block = numBytes / 64;
+   //for (int i = 0; i < numBytes; i += block)
+   //{
+   //   error = recv(sockfdComm, &(received[i]), 64 < (numBytes - i) ? 64 : (numBytes - i), 0);
+   //}
+   error = recv(sockfdComm, received, numBytes, 0);
+   //perror("Receive Status");
+   strError = error == 0 ? "socket closed" : "receive failed";
+   //cerr << "Received |" << received << "| in size " << sizeof(received) << ", but sent only " << error << " bytes\n";
+   return (error > 0) ? error : 0;
+}
+
+/*****************************************************************************
+* Sends a character through socket number in whereTo, default is 0
+* returns > 1 if successful.
+*****************************************************************************/
+template <class T>
+int Connection::sendData(T* toSend, unsigned int numBytes)
+{
+   int error = 1;
+   strError = "send failed";
+   //error = send(sockfdComm, toSend, sizeof(toSend), 0);
+   //while (error != 0)
+   //int block = numBytes / 64;
+   //for (int i = 0; i < numBytes; i += block)
+   //{
+   //   error = send(sockfdComm, &(toSend[i]), 64 < (numBytes - i) ? 64 : (numBytes - i), 0);
+   //}
+   error = send(sockfdComm, toSend, numBytes, 0);
+   //perror("Send Status");
+   //cerr << "Sent |" << toSend << "| in size " << sizeof(toSend) << ", but sent only " << error << " bytes\n";
+   return (error >= 0) ? error : 0;
+}
+
+/*****************************************************************************
+* Receives a character through socket number in whereFrom, default is 0
+* returns > 1 if successful.
+*****************************************************************************/
+template <class T>
+int Connection::receiveData(T* received, unsigned int numBytes)
 {
    int error = 1;
    strError = "receive failed";

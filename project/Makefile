@@ -53,12 +53,25 @@ strassen_int_futures: strassen_int_futures.cpp
 
 client_manager: client_manager.cpp connection.h errorColors.h matrix.h
 
+client: client_remove client_manager
+
+client_remove:
+	-rm client_manager
+
 server_leaf: server_leaf.cpp connection.h errorColors.h matrix.h
+
+server_cleanup:
+	./cleanup_servers_failsafe.bash
+
+server: server_cleanup server_remove server_leaf
+
+server_remove:
+	-rm server_leaf
 
 # Add all recipes where we want to ignore errors....
 .IGNORE: strassen_int_futures
 
-.PHONY: clean all mult_compare compare_big clean_temp client_test server_test dist_test local_test
+.PHONY: clean all mult_compare compare_big clean_temp client_test server_test dist_test local_test server_cleanup server server_remove client client_remove
 
 mult_compare: strassen_int strassen_noThreads_int standard strassen_int_opt standard_noThread strassen_int_opt2
 	time ./strassen_noThreads_int matrices/512_1.txt matrices/512_2.txt 512 | diff -q - matrices/512_1-2.txt
