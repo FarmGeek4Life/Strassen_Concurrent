@@ -82,6 +82,15 @@ void multiply(int i, int j, int start, int stop, int** matrixA, int** matrixB, i
    std::lock_guard<std::mutex> lock(resultLock);
    *result += myValue;
 }
+void multiply2(int i, int j, int** matrixA, int** matrixB, int* result, int size)
+{
+   // Initialize to known value...
+   *result = 0;
+   for (int k = 0; k < size; ++k)
+   {
+      *result += matrixA[i][k] * matrixB[k][j];
+   }
+}
 
 int main(int argc, char* argv[])
 {
@@ -104,8 +113,6 @@ int main(int argc, char* argv[])
       cout << "Usage: " << argv[0] << " [file1] [file2] [outFile] [size]\n";
       return 1;
    }
-   int threadCount = 64;
-   int jumpVal = size / threadCount;
    int** matrixA;
    int** matrixB;
    alloc(matrixA, size);
@@ -137,10 +144,15 @@ int main(int argc, char* argv[])
       return 1;
    }
    
+   int threadCount = 128;
+   int jumpVal = size / threadCount;
    ofstream fout(fileOut.c_str());
+   thread t[256];
+   int results[256];
    for (int i = 0; i < size; ++i)
    {
-      for (int j = 0; j < size; ++j )
+      //for (int j = 0; j < size; ++j)
+      for (int j = 0; j < size; j += threadCount)
       {
          // Initialize to known value...
          int result = 0;
@@ -148,20 +160,22 @@ int main(int argc, char* argv[])
          //{
          //   result += matrixA[i][k] * matrixB[k][j];
          //}
-         thread t[64];
          int m = 0;
          // double up, and do 2 or 3 rows at a time????
-         for (int k = 0; k < size; k += jumpVal)
+         //for (int k = 0; k < size; k += jumpVal)
+         for (int k = j; k < j + threadCount; ++k, ++m)
          {
             //result += matrixA[i][k] * matrixB[k][j];
             //void multiply(int i, int j, int start, int stop, T** matrixA, T** matrixB, T* result)
-            t[m++] = thread(multiply, i, j, k, k + jumpVal, matrixA, matrixB, &result);
+            //t[m++] = thread(multiply, i, j, k, k + jumpVal, matrixA, matrixB, &result);
+            t[m] = thread(multiply2, i, k, matrixA, matrixB, &results[m], size);
          }
          for (int k = 0; k < threadCount; ++k)
          {
             t[k].join();
+            fout << results[k] << " ";
          }
-         fout << result << " ";
+         //fout << result << " ";
       }
       fout << endl;
    }

@@ -75,26 +75,35 @@ int main(int argc, char** argv)
    // Using a seed, the output is consistent - it will be the same each time.
    
    // RAND_MAX is maximum size of signed integer.
-   char** matrix = new char*[size];
+   //char** matrix = new char*[size];
+   //for (unsigned int i = 0; i < size; ++i)
+   //{
+   //   matrix[i] = new char[size];
+   //   for (unsigned int j = 0; j < size; ++j)
+   //   {
+   //      matrix[i][j] = (char)(rand() % (int)(pow(2, 8)));
+   //   }
+   //}
+   //
+   //for (unsigned int i = 0; i < size; ++i)
+   //{
+   //   for (unsigned int j = 0; j < size; ++j)
+   //   {
+   //      cout << setw(5) << (int)matrix[i][j];
+   //   }
+   //   cout << endl;
+   //   delete matrix[i];
+   //}
+   //delete matrix;
+   // Less memory and time with no matrix allocation....
    for (unsigned int i = 0; i < size; ++i)
    {
-      matrix[i] = new char[size];
       for (unsigned int j = 0; j < size; ++j)
       {
-         matrix[i][j] = (char)(rand() % (int)(pow(2, 8)));
-      }
-   }
-   
-   for (unsigned int i = 0; i < size; ++i)
-   {
-      for (unsigned int j = 0; j < size; ++j)
-      {
-         cout << setw(5) << (int)matrix[i][j];
+         cout << ((char)(rand() % (int)(pow(2, 8)))) << " ";
       }
       cout << endl;
-      delete matrix[i];
    }
-   delete matrix;
    
    return 0;
 }
