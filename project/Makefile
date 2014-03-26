@@ -172,6 +172,21 @@ create_big: generator standard
 	 && echo "Matrices created/exist, continuing" ) || \
 	( echo "Matrices do NOT exist, exiting now!!" && false )
 
+create_big_lomem: generator standard_lo_mem
+#ifndef SIZE
+#  $(warning Please add 'SIZE=[size]' to the command line)
+#endif
+	@echo "creating matrices, if required"
+	-@( [ ! -d /tmp/brysoncg ] && mkdir /tmp/brysoncg ) || true
+	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_1.txt ) || true
+	-@( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
+	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] && time ./standard_lo_mem /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt /tmp/brysoncg/$(SIZE)_1-2.txt $(SIZE) ) || true
+# Final check: make sure they all exist, or fail and exit.
+	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
+	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \
+	 && echo "Matrices created/exist, continuing" ) || \
+	( echo "Matrices do NOT exist, exiting now!!" && false )
+
 create_big_fast: generator strassen_int_opt
 #ifndef SIZE
 #  $(warning Please add 'SIZE=[size]' to the command line)
