@@ -20,7 +20,7 @@
 //#include <cstring>
 #include <string>
 #include <unistd.h>
-#include "connection.h"
+//#include "connection.h"
 #include "errorColors.h"
 #include "matrix.h"
 // Signal handling....
@@ -44,6 +44,9 @@ void signal_callback_handler(int signum)
 }
 // End signal handlers.... (also a portion in main)
 
+/****************************************************************************
+* Parse an environment variable (':' separated)
+****************************************************************************/
 void parseEnv(char* envVar, string output[], int& count)
 {
    string var(envVar);
@@ -60,6 +63,11 @@ void parseEnv(char* envVar, string output[], int& count)
    output[count++] = var.substr(pos, next - pos);
 }
 
+/****************************************************************************
+* Parse the command line and environment variables
+* Read in the input matrices
+* Start the distribution
+****************************************************************************/
 int main(int argc, char* argv[])
 {
    // Signal Handler Setup
@@ -113,10 +121,6 @@ int main(int argc, char* argv[])
    }
    
    bool error = false;
-   //for (int i = 0; i < totalComputers; ++i)
-   //{
-   //   cerr << "Computer" << setw(3) << ": " << computers[i] << endl;
-   //}
    
    if (port.find_first_not_of("0123456789") != string::npos)
    {
@@ -219,38 +223,18 @@ int main(int argc, char* argv[])
       cerr << Red << "Unable to open " + file2 << RCol << endl;
       return 1;
    }
-   //cout << (matrixA * matrixB);
-   //Matrix<int> result(size);
-   //if (totalComputers == 1)
-   //{
-   //   //matrixA.runParallel(matrixB, result, computers[0], port);
-   //   
-   //   Connection net;
-   //   if (net.clientSetup(computers[0].c_str(), port.c_str()))
-   //   {
-   //      //thread t = thread(&Matrix<int>::runParallel, matrixA, matrixB, std::ref(result), computers[0], port, std::ref(net));
-   //      thread t = thread(&Matrix<int>::runParallel, matrixA, matrixB, std::ref(result), computers[0], port);
-   //      t.join();
-   //   }
-   //   else
-   //   {
-   //      // Report error....
-   //      cerr << Red << "ERROR: Network connection failed for system '" << computers[0] << "'!!!!: " << net.strError << RCol << "\n\n";
-   //      *NetError = true;
-   //   }
-   //}
-   //else
-   //{
-      //matrixA.mult_ThreadFarming(matrixB, result, computers, totalComputers, port);
+   if (totalComputers == 1)
+   {
+      matrixA.mult_FarmSlave(matrixB, NULL);
+   }
+   else
+   {
       matrixA.mult_ThreadFarming(matrixB, NULL, computers, totalComputers, port);
-   //}
+   }
    if (*NetError && size < 128)
    {
-      //cerr << result;
       cerr << matrixA;
    }
-   //cerr << result;
-   //cout << result;
    //cerr << matrixA;
    cout << matrixA;
 
