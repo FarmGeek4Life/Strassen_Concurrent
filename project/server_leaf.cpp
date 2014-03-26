@@ -94,28 +94,35 @@ void threadedManager(int socket, unsigned int id)
    //++multCounter;
    //}
    
-   cerr << Gre << "STARTING EXECUTION: THREAD " << id << RCol << "\n";
+   //cerr << Gre << "STARTING EXECUTION: THREAD " << id << RCol << "\n";
    Connection net(socket);
    int threadId = 0;
-   int tSize[1] = {0};
+   int controlData[5] = {0, 0, 0, 0, 0};
    int close[5] = {0, 0, 0, 0, 0};
    // Combine these into one read....
+   if (!net.receiveData(&controlData, 4 * 5) || pipe_Broke)
+   {
+      cerr << Red << "Server closed connection\n";
+      cerr << "ERROR: " << net.strError << RCol << endl;
+   }
    // Receive threadId
-   cerr << Gre << "RECEIVING THREAD ID..." << RCol << "\n";
-   if (!net.receiveData(&threadId, 4) || pipe_Broke)
-   {
-      cerr << Red << "Server closed connection\n";
-      cerr << "ERROR: " << net.strError << RCol << endl;
-   }
+   //cerr << Gre << "RECEIVING THREAD ID..." << RCol << "\n";
+   //if (!net.receiveData(&threadId, 4) || pipe_Broke)
+   //{
+   //   cerr << Red << "Server closed connection\n";
+   //   cerr << "ERROR: " << net.strError << RCol << endl;
+   //}
    // Receive size
-   cerr << Gre << "RECEIVING SIZE..." << RCol << "\n";
-   if (!net.receiveData(tSize, 4) || pipe_Broke)
-   {
-      cerr << Red << "Server closed connection\n";
-      cerr << "ERROR: " << net.strError << RCol << endl;
-   }
-   int size = tSize[0];
-   cerr << Gre << "SIZE RECEIVED IS: " << size << RCol << endl;
+   //cerr << Gre << "RECEIVING SIZE..." << RCol << "\n";
+   //if (!net.receiveData(tSize, 4) || pipe_Broke)
+   //{
+   //   cerr << Red << "Server closed connection\n";
+   //   cerr << "ERROR: " << net.strError << RCol << endl;
+   //}
+   threadId = controlData[0];
+   //int size = tSize[0];
+   int size = controlData[1];
+   //cerr << Gre << "SIZE RECEIVED IS: " << size << RCol << endl;
    int threadMax = 3; // default - works well for many sizes.
    
    ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -128,7 +135,7 @@ void threadedManager(int socket, unsigned int id)
    //Matrix<int> result(size);
    Matrix<T> matrixA(size);
    Matrix<T> matrixB(size);
-   Matrix<T> result(size);
+   //Matrix<T> result(size);
    matrixA.thread_Stop = size / 4;
    
    // Receive matrix A
@@ -158,9 +165,11 @@ void threadedManager(int socket, unsigned int id)
    if (matrixA.readNet(net) && matrixB.readNet(net))
    {
       cerr << Gre << "STATUS: Multiplying matrices!!!" << RCol << "\n";
-      matrixA.mult_FarmSlave(matrixB, result);
+      //matrixA.mult_FarmSlave(matrixB, result);
+      matrixA.mult_FarmSlave(matrixB, NULL);
       // Send Result
-      result.writeNet(net);
+      //result.writeNet(net);
+      matrixA.writeNet(net);
    }
    else
    {

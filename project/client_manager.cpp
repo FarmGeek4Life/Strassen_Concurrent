@@ -26,6 +26,8 @@
 // Signal handling....
 #include <signal.h>
 #include <errno.h>
+// For fixed-width integer types
+#include <cstdint>
 
 using namespace std;
 
@@ -187,7 +189,10 @@ int main(int argc, char* argv[])
    //Tie this local variable to the matrix class static variable...
    bool* NetError = &(matrixA.NetError);
    
+   //matrixA.thread_Stop = thread_Stop / 2;
    matrixA.thread_Stop = thread_Stop;
+   //matrixA.maxThreads = 17 * 2;
+   matrixA.maxThreads = 17 * 4;
 
    inFile.open(file.c_str());
    
@@ -215,7 +220,7 @@ int main(int argc, char* argv[])
       return 1;
    }
    //cout << (matrixA * matrixB);
-   Matrix<int> result(size);
+   //Matrix<int> result(size);
    //if (totalComputers == 1)
    //{
    //   //matrixA.runParallel(matrixB, result, computers[0], port);
@@ -236,14 +241,18 @@ int main(int argc, char* argv[])
    //}
    //else
    //{
-      matrixA.mult_ThreadFarming(matrixB, result, computers, totalComputers, port);
+      //matrixA.mult_ThreadFarming(matrixB, result, computers, totalComputers, port);
+      matrixA.mult_ThreadFarming(matrixB, NULL, computers, totalComputers, port);
    //}
    if (*NetError && size < 128)
    {
-      cerr << result;
+      //cerr << result;
+      cerr << matrixA;
    }
    //cerr << result;
-   cout << result;
+   //cout << result;
+   //cerr << matrixA;
+   cout << matrixA;
 
    return 0;
 }

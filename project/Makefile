@@ -82,7 +82,7 @@ mult_compare: strassen_int strassen_noThreads_int standard strassen_int_opt stan
 	time ./standard_noThread      matrices/512_1.txt matrices/512_2.txt 512 | diff -q - matrices/512_1-2.txt
 
 TEST_SIZE := 512
-client_test: client_manager
+client_test: client_manager create_big_fast
 # Available sizes: 16 32 64 128 512
 	@echo "Use the BG_COMPUTERS and BG_PORT environment variables"
 	@echo "For example, |export BG_COMPUTERS='x.x.x.x:y.y.y.y:z.z.z.z'|"
@@ -115,7 +115,7 @@ client_debug: client_manager
 	@echo "For example, |export BG_PORT='xxxx'|"
 	export BG_COMPUTERS="$(BG_COMPUTERS)"; \
 	export BG_PORT="$(BG_PORT)"; \
-	gdb client_manager -ex "run matrices/64_1.txt matrices/64_2.txt 64 | diff -qs - matrices/64_1-2.txt"
+	gdb client_manager -ex "run matrices/64_1.txt matrices/64_2.txt 64"
 
 server_debug: server_leaf
 	@echo "Use the BG_PORT environment variable"
@@ -164,7 +164,7 @@ create_big: generator standard
 	-@( [ ! -d /tmp/brysoncg ] && mkdir /tmp/brysoncg ) || true
 	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_1.txt ) || true
 	-@( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] && ./standard /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) \
+	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] && time ./standard /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) \
 	> /tmp/brysoncg/$(SIZE)_1-2.txt ) || true
 # Final check: make sure they all exist, or fail and exit.
 	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
