@@ -138,7 +138,7 @@ int main(int argc, char* argv[])
       read(inFile2, matrixB, size);
       inFile2.close();
    }
-   else 
+   else
    {
       cerr << "Unable to open " + file2;
       return 1;

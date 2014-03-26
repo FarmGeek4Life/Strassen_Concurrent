@@ -28,7 +28,6 @@
 #include <map>       // STL Map associative container
 #include <ctime>     // Time algorithms
 
-
 using namespace std;
 
 /*****************************************************************************
