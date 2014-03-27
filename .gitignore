@@ -6,4 +6,4 @@ project/standard_noThread
 project/strassen_int_opt
 project/strassen_int_opt2
 project/standard_lo_mem
-
+project/strassen_int_opt_faster
