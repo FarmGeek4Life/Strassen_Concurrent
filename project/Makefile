@@ -11,6 +11,9 @@ else
   STD := -std=c++0x
 endif
 
+# -g is for debugging... - remove when using optimizations (counterproductive)
+# -pedantic provides improved information about compile errors with c++11/0x
+COMP_FLAGS = -pthread ${STD} -pedantic -O3
 # Using implicit recipes...
 # For C++ compilation:
 # $(CXX) $(CPPFLAGS) $(CXXFLAGS) -c [files]
@@ -19,7 +22,8 @@ endif
 # Flags for the C++ preprocessor
 #CPPFLAGS = 
 # Flags for the C++ compiler
-CXXFLAGS = -pthread ${STD} -pedantic -g
+#CXXFLAGS = -pthread ${STD} -pedantic -g
+CXXFLAGS = ${COMP_FLAGS}
 # For C++ linking:
 # $(CC) $(LDFLAGS) n.o $(LOADLIBES) $(LDLIBS)
 # Linker program: (default cc, aka gcc)
@@ -28,7 +32,8 @@ CC = g++
 # LDFLAGS = -L
 # Library flags for linker: (LOADLIBES same, but deprecated) (use -l)
 # THIS LINE WILL CAUSE DUPLICATIONS, BUT THE DATA IS NEEDED IF *.o IS EVER USED!!!!
-LDLIBS = -pthread ${STD} -pedantic -g
+#LDLIBS = -pthread ${STD} -pedantic -g
+LDLIBS = ${COMP_FLAGS}
 
 ifndef SIZE
   $(warning Please add 'SIZE=[size]' to the command line)
@@ -44,6 +49,11 @@ ifndef BG_PORT
   $(warning Please run 'export BG_PORT="xxxx"' on the command line)
   BG_PORT := 10021
   $(info 'BG_PORT' set to '$(BG_PORT)')
+endif
+ifndef BG_COUNT
+  $(warning Please run 'export BG_COUNT="x"' on the command line)
+  BG_COUNT := 7
+  $(info 'BG_COUNT' set to '$(BG_COUNT)')
 endif
 
 strassen_int: strassen_int.cpp
@@ -63,10 +73,13 @@ server_leaf: server_leaf.cpp connection.h errorColors.h matrix.h
 server_cleanup:
 	./cleanup_servers_failsafe.bash
 
-server: server_cleanup server_remove server_leaf
+server: server_cleanup server_remove server_leaf server_start
 
 server_remove:
 	-rm server_leaf
+
+server_start: server_leaf
+	[[ "$(BG_COMPUTERS)" != "$$(hostname -i)" ]] && ./use_count.bash $(BG_PORT) $(BG_COUNT)
 
 # Add all recipes where we want to ignore errors....
 .IGNORE: strassen_int_futures
@@ -181,6 +194,22 @@ create_big_lomem: generator standard_lo_mem
 	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_1.txt ) || true
 	-@( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
 	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] && time ./standard_lo_mem /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt /tmp/brysoncg/$(SIZE)_1-2.txt $(SIZE) ) || true
+# Final check: make sure they all exist, or fail and exit.
+	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
+	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \
+	 && echo "Matrices created/exist, continuing" ) || \
+	( echo "Matrices do NOT exist, exiting now!!" && false )
+
+create_big_faster: generator strassen_int_opt_faster
+#ifndef SIZE
+#  $(warning Please add 'SIZE=[size]' to the command line)
+#endif
+	@echo "creating matrices, if required"
+	-@( [ ! -d /tmp/brysoncg ] && mkdir /tmp/brysoncg ) || true
+	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_1.txt ) || true
+	-@( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
+	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] && time (./strassen_int_opt_faster /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) \
+	> /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
 # Final check: make sure they all exist, or fail and exit.
 	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
 	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \

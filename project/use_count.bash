@@ -1,14 +1,21 @@
 #!/bin/bash
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 1 ]; then
   echo "Usage: $0 port numComputers"
-  exit
+  return
 fi
 
-(cleanup_servers_failsafe.bash)
+echo "Killing servers...."
+(cleanup_servers_failsafe.bash > /dev/null)
 
 args=("$@")
 port=${args[0]}
+if [ $port -le 1024 ]; then
+   echo "Using 10021 for the port...."
+   args[1]=$port
+   port=10021
+   args[0]=10021
+fi
 if [ ${args[1]} -gt 34 ]; then
    args[1]=34
 fi
@@ -39,6 +46,7 @@ comp_list=$(echo "$comp_list" | sed 's/^://')
 
 export BG_COMPUTERS="$comp_list"
 export BG_PORT="$port"
+export BG_COUNT="${args[1]}"
 
 for i in ${computers2[@]}; do
   echo "System $i:"
