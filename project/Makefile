@@ -169,63 +169,73 @@ local_test: client_manager server_leaf
 clean_temp:
 	-rm -rf /tmp/brysoncg
 
-create_big: generator standard
+generate_big: generator
+	@echo "creating matrices, if required"
+	-@( [ ! -d /tmp/brysoncg ] && mkdir /tmp/brysoncg ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_1.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_1.txt ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
+
+create_big: generate_big standard
 #ifndef SIZE
 #  $(warning Please add 'SIZE=[size]' to the command line)
 #endif
-	@echo "creating matrices, if required"
-	-@( [ ! -d /tmp/brysoncg ] && mkdir /tmp/brysoncg ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_1.txt ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] && time ./standard /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) \
-	> /tmp/brysoncg/$(SIZE)_1-2.txt ) || true
+	@echo "creating matrix solution, if required"
+	-( ( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	time ./standard /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_1-2.txt ) || true
 # Final check: make sure they all exist, or fail and exit.
 	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
 	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \
 	 && echo "Matrices created/exist, continuing" ) || \
 	( echo "Matrices do NOT exist, exiting now!!" && false )
 
-create_big_lomem: generator standard_lo_mem
+create_big_lomem: generate_big standard_lo_mem
 #ifndef SIZE
 #  $(warning Please add 'SIZE=[size]' to the command line)
 #endif
-	@echo "creating matrices, if required"
-	-@( [ ! -d /tmp/brysoncg ] && mkdir /tmp/brysoncg ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_1.txt ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] && time ./standard_lo_mem /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt /tmp/brysoncg/$(SIZE)_1-2.txt $(SIZE) ) || true
+	@echo "creating matrix solution, if required"
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	time ./standard_lo_mem /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt /tmp/brysoncg/$(SIZE)_1-2.txt $(SIZE) ) || true
 # Final check: make sure they all exist, or fail and exit.
 	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
 	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \
 	 && echo "Matrices created/exist, continuing" ) || \
 	( echo "Matrices do NOT exist, exiting now!!" && false )
 
-create_big_faster: generator strassen_int_opt_faster
+create_huge: generate_big strassen_int_opt_large
 #ifndef SIZE
 #  $(warning Please add 'SIZE=[size]' to the command line)
 #endif
-	@echo "creating matrices, if required"
-	-@( [ ! -d /tmp/brysoncg ] && mkdir /tmp/brysoncg ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_1.txt ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] && time (./strassen_int_opt_faster /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) \
-	> /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
+	@echo "creating matrix solution, if required"
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	time (./strassen_int_opt_large /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
 # Final check: make sure they all exist, or fail and exit.
 	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
 	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \
 	 && echo "Matrices created/exist, continuing" ) || \
 	( echo "Matrices do NOT exist, exiting now!!" && false )
 
-create_big_fast: generator strassen_int_opt
+create_big_faster: generate_big strassen_int_opt_faster
 #ifndef SIZE
 #  $(warning Please add 'SIZE=[size]' to the command line)
 #endif
-	@echo "creating matrices, if required"
-	-@( [ ! -d /tmp/brysoncg ] && mkdir /tmp/brysoncg ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_1.txt ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] && ./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
-	-@( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] && time (./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) \
-	> /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
+	@echo "creating matrix solution, if required"
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	time (./strassen_int_opt_faster /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
+# Final check: make sure they all exist, or fail and exit.
+	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
+	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \
+	 && echo "Matrices created/exist, continuing" ) || \
+	( echo "Matrices do NOT exist, exiting now!!" && false )
+
+create_big_fast: generate_big strassen_int_opt
+#ifndef SIZE
+#  $(warning Please add 'SIZE=[size]' to the command line)
+#endif
+	@echo "creating matrix solution, if required"
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	time (./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
 # Final check: make sure they all exist, or fail and exit.
 	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
 	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \

@@ -99,7 +99,7 @@ int main(int argc, char** argv)
    {
       for (unsigned int j = 0; j < size; ++j)
       {
-         cout << ((char)(rand() % (int)(pow(2, 8)))) << " ";
+         cout << ((int)((char)(rand() % (int)(pow(2, 8))))) << " ";
       }
       cout << endl;
    }
