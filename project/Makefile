@@ -95,7 +95,8 @@ mult_compare: strassen_int strassen_noThreads_int standard strassen_int_opt stan
 	time ./standard_noThread      matrices/512_1.txt matrices/512_2.txt 512 | diff -q - matrices/512_1-2.txt
 
 TEST_SIZE := 512
-client_test: client_manager create_big_fast
+#client_test: client_manager create_big_fast
+client_test: client_manager create_huge
 # Available sizes: 16 32 64 128 512
 	@echo "Use the BG_COMPUTERS and BG_PORT environment variables"
 	@echo "For example, |export BG_COMPUTERS='x.x.x.x:y.y.y.y:z.z.z.z'|"
@@ -251,13 +252,14 @@ compare_big: create_big standard standard_noThread strassen_int_opt strassen_int
 	-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
 	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
 
-compare_big_fast_s: create_big_fast strassen_int_opt strassen_int_opt2 strassen_int_opt_faster
+compare_big_fast_s: create_big_fast strassen_int_opt strassen_int_opt2 strassen_int_opt_faster strassen_int_opt_large
 #ifndef SIZE
 #  $(warning Please add 'SIZE=[size]' to the command line)
 #endif
-	-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+#	-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+#	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
 	-time ./strassen_int_opt_faster /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+	-time ./strassen_int_opt_large /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
 
 compare_big_fast: create_big_fast strassen_int_opt strassen_int_opt2
 #ifndef SIZE

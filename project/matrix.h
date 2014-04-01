@@ -387,6 +387,8 @@ public:
    
    // Output the entire matrix on error:
    static bool NetError;
+   // Starting point for thread creation
+   static int thread_Start;
    // Stopping point for thread creation
    static int thread_Stop;
    static int sysCounter;
@@ -638,7 +640,18 @@ public:
          // m7 = (a01 - a11) * (b10 + b11);
          
          // Split for the thread number optimization
-         if (mSize > thread_Stop)
+         if (mSize > thread_Start)
+         {
+            // Matrix is too large. Slow down to save memory...
+            m1.mult_wrapper((b00 + b11), null);
+            m2.mult_wrapper((b00)      , null);
+            m3.mult_wrapper((b01 - b11), null);
+            m4.mult_wrapper((b10 - b00), null);
+            m5.mult_wrapper((b11)      , null);
+            m6.mult_wrapper((b00 + b01), null);
+            m7.mult_wrapper((b10 + b11), null);
+         }
+         else if (mSize > thread_Stop)
          {
             t[1] = std::thread(&Matrix<T>::mult_FarmSlave, &m1, (b00 + b11), null);
             t[2] = std::thread(&Matrix<T>::mult_FarmSlave, &m2, (b00)      , null);
@@ -787,7 +800,7 @@ public:
             //if (!net.receiveInt(&(this->mRows[i][j]), (int)sizeof(T)))
             if (!net.receiveData(&(this->mRows[i][j]), sizeof(T)))
             {
-               std::cerr << Red << "Server closed connection\n";
+               std::cerr << Red << "Server closed connection: ReadNet\n";
                std::cerr << "ERROR: " << net.strError << RCol << std::endl;
                success = false;
                break;
@@ -840,7 +853,7 @@ public:
             //if (!net.sendInt(&(this->mRows[i][j]), (int)sizeof(T)))
             if (!net.sendData(&(this->mRows[i][j]), sizeof(T)))
             {
-               std::cerr << Red << "Server closed connection\n";
+               std::cerr << Red << "Server closed connection: WriteNet\n";
                std::cerr << "ERROR: " << net.strError << RCol << std::endl;
                success = false;
                break;
@@ -869,6 +882,8 @@ public:
 };
 
 // Initialize the static variables for Matrix
+template <class T>
+int Matrix<T>::thread_Start = 8192;
 template <class T>
 bool Matrix<T>::NetError = false;
 template <class T>
@@ -927,7 +942,7 @@ void threadedManager(int socket, unsigned int id)
    // Combine these into one read....
    if (!net.receiveData(&controlData, 4 * 5))
    {
-      std::cerr << Red << "Server closed connection\n";
+      std::cerr << Red << "Server closed connection: Receive control data\n";
       std::cerr << "ERROR: " << net.strError << RCol << std::endl;
    }
    threadId = controlData[0];
@@ -942,7 +957,19 @@ void threadedManager(int socket, unsigned int id)
    Matrix<T> matrixA(size);
    Matrix<T> matrixB(size);
    //Matrix<T> result(size);
-   matrixA.thread_Stop = size / 4;
+   // The benefits of this are negligible on small matrices, but will greatly decrease memory
+   //    usage on large matrices, with time benefits as well.
+   //if (size < 8192) // big advantage first seen with 8192x8192
+   if (size < 4096)
+   {
+      matrixA.thread_Stop = size / 4;
+   }
+   else
+   {
+      matrixA.thread_Stop = 512;
+      matrixA.thread_Start = matrixA.thread_Stop * 4;
+   }
+   //matrixA.thread_Stop = size / 4;
    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    ////////// LOOK AT STRASSEN_INT_OPT_LARGE - WILL THE SAME METHOD WORK TO SPEED UP THE DISTRIBUTED VERSION? ///////////////////////////////////////////////////////////////////////////////////

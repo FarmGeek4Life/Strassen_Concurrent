@@ -1,8 +1,13 @@
 #!/bin/bash
 
+ssh_options="-o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no"
+# ConnectTimeout: fail after 10 seconds without response - seems to be iffy, use 'timeout' command and chain
+# BatchMode: Automatic 'yes' to add to known hosts
+# StrictHostKeyChecking: Auto add the fingerprint
+
 # Run a command on each computer, and set the result as the exit status...
 for ((i = 1; i <= 35; i+=1));do
-  ((echo 'COUNT=$(ps -eLf | grep -v "grep" | grep -c "server_leaf"); exit $COUNT'; exit) | ssh -T -p 215 aus213l$i) 2>/dev/null &
+  ((echo 'COUNT=$(ps -eLf | grep -v "grep" | grep -c "server_leaf"); exit $COUNT'; exit) | timeout 10s ssh -T -p $SSH_PORT $ssh_options aus213l$i) 2>/dev/null &
   PIDS[$i]=$!
 done
 
