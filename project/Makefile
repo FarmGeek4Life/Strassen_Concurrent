@@ -13,6 +13,7 @@ endif
 
 # -g is for debugging... - remove when using optimizations (counterproductive)
 # -pedantic provides improved information about compile errors with c++11/0x
+# -O3 - highest level of optimization...
 COMP_FLAGS = -pthread ${STD} -pedantic -O3
 # Using implicit recipes...
 # For C++ compilation:
@@ -109,6 +110,8 @@ client_test: client_manager create_huge
 #	time ./client_manager matrices/32_1.txt  matrices/32_2.txt  32  | diff -qs - matrices/32_1-2.txt
 #	time ./client_manager matrices/64_1.txt  matrices/64_2.txt  64  | diff -qs - matrices/64_1-2.txt
 #	time ./client_manager matrices/128_1.txt matrices/128_2.txt 128 | diff -qs - matrices/128_1-2.txt
+#  To supposedly duplicate stdout to stderr...
+#	time ./client_manager /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | tee /dev/stderr | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
 
 server_test: server_leaf
 	@echo "Use the BG_PORT environment variable"
@@ -129,7 +132,8 @@ client_debug: client_manager
 	@echo "For example, |export BG_PORT='xxxx'|"
 	export BG_COMPUTERS="$(BG_COMPUTERS)"; \
 	export BG_PORT="$(BG_PORT)"; \
-	gdb client_manager -ex "run matrices/64_1.txt matrices/64_2.txt 64"
+	gdb client_manager -ex "run /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE)"
+#	gdb client_manager -ex "run matrices/64_1.txt matrices/64_2.txt 64"
 
 server_debug: server_leaf
 	@echo "Use the BG_PORT environment variable"

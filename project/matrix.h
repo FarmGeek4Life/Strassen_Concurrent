@@ -66,6 +66,9 @@ public:
       }
    }
    
+   /*********************************************************************
+   * Allocate and fill the matrix with the specified data
+   *********************************************************************/
    Matrix<T>(const Matrix<T>& matrixA, const Matrix<T>& matrixB, bool add)
    {
       mSize = matrixB.getSize();
@@ -95,6 +98,24 @@ public:
             }
          }
       }
+   }
+   
+   /*********************************************************************
+   * Allocate and fill the matrix with the specified data
+   * Wrapper to use with threading
+   *********************************************************************/
+   void addFill(const Matrix<T>& matrixB, Matrix<T>*& newMatrix, bool add) const
+   {
+      newMatrix = new Matrix<T>(*this, matrixB, add);
+   }
+   
+   /*********************************************************************
+   * Copy Matrix
+   * Wrapper to use with threading
+   *********************************************************************/
+   void copyTo(Matrix<T>*& newMatrix) const
+   {
+      newMatrix = new Matrix<T>(*this);
    }
 
    Matrix<T>& operator=(const Matrix<T>& matrixB)
@@ -406,7 +427,7 @@ public:
    {
       if (mSize > 1)
       {
-         std::thread t[8];
+         std::thread t[16];
          
          // Four quadrants for each matrix being multiplied
          Matrix<T> a00(*this, 0, 0);
@@ -420,14 +441,91 @@ public:
          
          // Temporary Matrices to hold the 7 multiplication results
          // Initialize to the left side of the multiplication...
-         Matrix<T> m1(a00, a11, true ); // Create new object, adding 2nd to 1st
-         Matrix<T> m2(a10, a11, true ); // Create new object, adding 2nd to 1st
-         Matrix<T> m3(a00            ); // Make a copy...
-         Matrix<T> m4(a11            ); // Make a copy...
-         Matrix<T> m5(a00, a01, true ); // Create new object, adding 2nd to 1st
-         Matrix<T> m6(a10, a00, false); // Create new object, subtracting 2nd from 1st
-         Matrix<T> m7(a01, a11, false); // Create new object, subtracting 2nd from 1st
+         //Matrix<T> m1(a00, a11, true ); // Create new object, adding 2nd to 1st
+         //Matrix<T> m2(a10, a11, true ); // Create new object, adding 2nd to 1st
+         //Matrix<T> m3(a00            ); // Make a copy...
+         //Matrix<T> m4(a11            ); // Make a copy...
+         //Matrix<T> m5(a00, a01, true ); // Create new object, adding 2nd to 1st
+         //Matrix<T> m6(a10, a00, false); // Create new object, subtracting 2nd from 1st
+         //Matrix<T> m7(a01, a11, false); // Create new object, subtracting 2nd from 1st
          Matrix<int>* null = NULL;
+         
+         Matrix<T> *m1;
+         Matrix<T> *m2;
+         Matrix<T> *m3;
+         Matrix<T> *m4;
+         Matrix<T> *m5;
+         Matrix<T> *m6;
+         Matrix<T> *m7;
+         Matrix<T> *b1;
+         Matrix<T> *b2;
+         Matrix<T> *b3;
+         Matrix<T> *b4;
+         Matrix<T> *b5;
+         Matrix<T> *b6;
+         Matrix<T> *b7;
+         
+         if (mSize < 4096)
+         {
+            m1 = new Matrix<T>(a00, a11, true ); // Create new object, adding 2nd to 1st
+            m2 = new Matrix<T>(a10, a11, true ); // Create new object, adding 2nd to 1st
+            m3 = new Matrix<T>(a00            ); // Make a copy...
+            m4 = new Matrix<T>(a11            ); // Make a copy...
+            m5 = new Matrix<T>(a00, a01, true ); // Create new object, adding 2nd to 1st
+            m6 = new Matrix<T>(a10, a00, false); // Create new object, subtracting 2nd from 1st
+            m7 = new Matrix<T>(a01, a11, false); // Create new object, subtracting 2nd from 1st
+            b1 = new Matrix<T>(b00, b11, true ); // Create new object, adding 2nd to 1st
+            b2 = new Matrix<T>(b00            ); // Make a copy... -----------------------------Should be able to get away with a pointer copy... - not with the memory deallocation that follows...
+            b3 = new Matrix<T>(b01, b11, false); // Create new object, subtracting 2nd from 1st
+            b4 = new Matrix<T>(b10, b00, false); // Create new object, adding 2nd to 1st
+            b5 = new Matrix<T>(b11            ); // Make a copy... -----------------------------Should be able to get away with a pointer copy... - not with the memory deallocation that follows...
+            b6 = new Matrix<T>(b00, b01, true ); // Create new object, subtracting 2nd from 1st
+            b7 = new Matrix<T>(b10, b11, true ); // Create new object, adding 2nd to 1st
+         }
+         else
+         {
+            t[1]  = std::thread(&Matrix<T>::addFill, &a00, std::ref(a11), std::ref(m1), true );
+            t[2]  = std::thread(&Matrix<T>::addFill, &a10, std::ref(a11), std::ref(m2), true );
+            t[3]  = std::thread(&Matrix<T>::copyTo , &a00               , std::ref(m3)       );
+            t[4]  = std::thread(&Matrix<T>::copyTo , &a11               , std::ref(m4)       );
+            t[5]  = std::thread(&Matrix<T>::addFill, &a00, std::ref(a01), std::ref(m5), true );
+            t[6]  = std::thread(&Matrix<T>::addFill, &a10, std::ref(a00), std::ref(m6), false);
+            t[7]  = std::thread(&Matrix<T>::addFill, &a01, std::ref(a11), std::ref(m7), false);
+            
+            t[8]  = std::thread(&Matrix<T>::addFill, &b00, std::ref(b11), std::ref(b1), true );
+            t[9]  = std::thread(&Matrix<T>::copyTo , &b00               , std::ref(b2)       );
+            t[10] = std::thread(&Matrix<T>::addFill, &b01, std::ref(b11), std::ref(b3), false);
+            t[11] = std::thread(&Matrix<T>::addFill, &b10, std::ref(b00), std::ref(b4), false);
+            t[12] = std::thread(&Matrix<T>::copyTo , &b11               , std::ref(b5)       );
+            t[13] = std::thread(&Matrix<T>::addFill, &b00, std::ref(b01), std::ref(b6), true );
+            t[14] = std::thread(&Matrix<T>::addFill, &b10, std::ref(b11), std::ref(b7), true );
+            
+            t[1] .join();
+            t[2] .join();
+            t[3] .join();
+            t[4] .join();
+            t[5] .join();
+            t[6] .join();
+            t[7] .join();
+            t[8] .join();
+            t[9] .join();
+            t[10].join();
+            t[11].join();
+            t[12].join();
+            t[13].join();
+            t[14].join();
+            //for (int i = 1; i < 15; ++i)
+            //{
+            //   t[i].join();
+            //}
+         }
+         // Clear out allocated memory....
+         b00.erase();
+         b01.erase();
+         b10.erase();
+         b11.erase();
+         // We don't need matrixB data anymore. Erase it.
+         matrixB.erase();
          
          // Get the 7 multiplication results
          // m1 = (a00 + a11) * (b00 + b11);
@@ -442,25 +540,39 @@ public:
          // It makes no sense to split into smaller chunks for 7 computers
          if (mSize > thread_Stop && numComputers != 7 && numComputers != 1)
          {
-            t[1] = std::thread(&Matrix<T>::mult_ThreadFarming, &m1, (b00 + b11), null, computers, numComputers, port);
-            t[2] = std::thread(&Matrix<T>::mult_ThreadFarming, &m2, (b00)      , null, computers, numComputers, port);
-            t[3] = std::thread(&Matrix<T>::mult_ThreadFarming, &m3, (b01 - b11), null, computers, numComputers, port);
-            t[4] = std::thread(&Matrix<T>::mult_ThreadFarming, &m4, (b10 - b00), null, computers, numComputers, port);
-            t[5] = std::thread(&Matrix<T>::mult_ThreadFarming, &m5, (b11)      , null, computers, numComputers, port);
-            t[6] = std::thread(&Matrix<T>::mult_ThreadFarming, &m6, (b00 + b01), null, computers, numComputers, port);
-            t[7] = std::thread(&Matrix<T>::mult_ThreadFarming, &m7, (b10 + b11), null, computers, numComputers, port);
+            //t[1] = std::thread(&Matrix<T>::mult_ThreadFarming, &m1, (b00 + b11), null, computers, numComputers, port);
+            //t[2] = std::thread(&Matrix<T>::mult_ThreadFarming, &m2, (b00)      , null, computers, numComputers, port);
+            //t[3] = std::thread(&Matrix<T>::mult_ThreadFarming, &m3, (b01 - b11), null, computers, numComputers, port);
+            //t[4] = std::thread(&Matrix<T>::mult_ThreadFarming, &m4, (b10 - b00), null, computers, numComputers, port);
+            //t[5] = std::thread(&Matrix<T>::mult_ThreadFarming, &m5, (b11)      , null, computers, numComputers, port);
+            //t[6] = std::thread(&Matrix<T>::mult_ThreadFarming, &m6, (b00 + b01), null, computers, numComputers, port);
+            //t[7] = std::thread(&Matrix<T>::mult_ThreadFarming, &m7, (b10 + b11), null, computers, numComputers, port);
+            t[1] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m1), std::ref(*b1), null, computers, numComputers, port);
+            t[2] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m2), std::ref(*b2), null, computers, numComputers, port);
+            t[3] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m3), std::ref(*b3), null, computers, numComputers, port);
+            t[4] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m4), std::ref(*b4), null, computers, numComputers, port);
+            t[5] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m5), std::ref(*b5), null, computers, numComputers, port);
+            t[6] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m6), std::ref(*b6), null, computers, numComputers, port);
+            t[7] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m7), std::ref(*b7), null, computers, numComputers, port);
          }
          else
          {
             // Mutex: control the access to the system counter (sysCounter) for even distribution
             std::lock_guard<std::mutex> lock(sysCounter_Mutex);
-            t[1] = std::thread(&Matrix<T>::runParallel, &m1, (b00 + b11), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[2] = std::thread(&Matrix<T>::runParallel, &m2, (b00)      , null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[3] = std::thread(&Matrix<T>::runParallel, &m3, (b01 - b11), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[4] = std::thread(&Matrix<T>::runParallel, &m4, (b10 - b00), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[5] = std::thread(&Matrix<T>::runParallel, &m5, (b11)      , null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[6] = std::thread(&Matrix<T>::runParallel, &m6, (b00 + b01), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[7] = std::thread(&Matrix<T>::runParallel, &m7, (b10 + b11), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            //t[1] = std::thread(&Matrix<T>::runParallel, &m1, (b00 + b11), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            //t[2] = std::thread(&Matrix<T>::runParallel, &m2, (b00)      , null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            //t[3] = std::thread(&Matrix<T>::runParallel, &m3, (b01 - b11), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            //t[4] = std::thread(&Matrix<T>::runParallel, &m4, (b10 - b00), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            //t[5] = std::thread(&Matrix<T>::runParallel, &m5, (b11)      , null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            //t[6] = std::thread(&Matrix<T>::runParallel, &m6, (b00 + b01), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            //t[7] = std::thread(&Matrix<T>::runParallel, &m7, (b10 + b11), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            t[1] = std::thread(&Matrix<T>::runParallel, &(*m1), std::ref(*b1), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            t[2] = std::thread(&Matrix<T>::runParallel, &(*m2), std::ref(*b2), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            t[3] = std::thread(&Matrix<T>::runParallel, &(*m3), std::ref(*b3), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            t[4] = std::thread(&Matrix<T>::runParallel, &(*m4), std::ref(*b4), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            t[5] = std::thread(&Matrix<T>::runParallel, &(*m5), std::ref(*b5), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            t[6] = std::thread(&Matrix<T>::runParallel, &(*m6), std::ref(*b6), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
+            t[7] = std::thread(&Matrix<T>::runParallel, &(*m7), std::ref(*b7), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
          }
          // Clear out allocated memory....
          b00.erase();
@@ -478,6 +590,13 @@ public:
          t[6].join();
          t[7].join();
          
+         b1->erase();
+         b2->erase();
+         b3->erase();
+         b4->erase();
+         b5->erase();
+         b6->erase();
+         b7->erase();
          // Use the 7 multiplication results to get the results for each quadrant
          // Save on memory usage by reusing one set of quadrants
          // Also saves on time - no de/reallocation
@@ -485,10 +604,28 @@ public:
          //a01 = m3 + m5;
          //a10 = m2 + m4;
          //a11 = m1 + m3 - m2 + m6;
-         a00.op00_11(m1, m4, m5, m7);
-         a01.op01_10(m3, m5);
-         a10.op01_10(m2, m4);
-         a11.op00_11(m1, m3, m2, m6);
+         //a00.op00_11(m1, m4, m5, m7);
+         //a01.op01_10(m3, m5);
+         //a10.op01_10(m2, m4);
+         //a11.op00_11(m1, m3, m2, m6);
+         if (mSize < 4096)
+         {
+            a00.op00_11(*m1, *m4, *m5, *m7);
+            a01.op01_10(*m3, *m5);
+            a10.op01_10(*m2, *m4);
+            a11.op00_11(*m1, *m3, *m2, *m6);
+         }
+         else
+         {
+            t[1] = std::thread(&Matrix<T>::op00_11, &a00, *m1, *m4, *m5, *m7);
+            t[2] = std::thread(&Matrix<T>::op01_10, &a01, *m3, *m5);
+            t[3] = std::thread(&Matrix<T>::op01_10, &a10, *m2, *m4);
+            t[4] = std::thread(&Matrix<T>::op00_11, &a11, *m1, *m3, *m2, *m6);
+            t[1].join();
+            t[2].join();
+            t[3].join();
+            t[4].join();
+         }
          //a00 = m1;
          //a00 += m4;
          //a00 -= m5;
@@ -607,7 +744,7 @@ public:
    {
       if (mSize > 1)
       {
-         std::thread t[8];
+         std::thread t[16];
          
          // Four quadrants for each matrix being multiplied
          Matrix<T> a00(*this, 0, 0);
@@ -621,14 +758,78 @@ public:
          
          // Temporary Matrices to hold the 7 multiplication results
          // Initialize to the left side of the multiplication...
-         Matrix<T> m1(a00, a11, true ); // Create new object, adding 2nd to 1st
-         Matrix<T> m2(a10, a11, true ); // Create new object, adding 2nd to 1st
-         Matrix<T> m3(a00            ); // Make a copy...
-         Matrix<T> m4(a11            ); // Make a copy...
-         Matrix<T> m5(a00, a01, true ); // Create new object, adding 2nd to 1st
-         Matrix<T> m6(a10, a00, false); // Create new object, subtracting 2nd from 1st
-         Matrix<T> m7(a01, a11, false); // Create new object, subtracting 2nd from 1st
+         //Matrix<T> m1(a00, a11, true ); // Create new object, adding 2nd to 1st
+         //Matrix<T> m2(a10, a11, true ); // Create new object, adding 2nd to 1st
+         //Matrix<T> m3(a00            ); // Make a copy...
+         //Matrix<T> m4(a11            ); // Make a copy...
+         //Matrix<T> m5(a00, a01, true ); // Create new object, adding 2nd to 1st
+         //Matrix<T> m6(a10, a00, false); // Create new object, subtracting 2nd from 1st
+         //Matrix<T> m7(a01, a11, false); // Create new object, subtracting 2nd from 1st
          Matrix<int>* null = NULL;
+         
+         Matrix<T> *m1;
+         Matrix<T> *m2;
+         Matrix<T> *m3;
+         Matrix<T> *m4;
+         Matrix<T> *m5;
+         Matrix<T> *m6;
+         Matrix<T> *m7;
+         Matrix<T> *b1;
+         Matrix<T> *b2;
+         Matrix<T> *b3;
+         Matrix<T> *b4;
+         Matrix<T> *b5;
+         Matrix<T> *b6;
+         Matrix<T> *b7;
+         
+         if (mSize < 4096)
+         {
+            m1 = new Matrix<T>(a00, a11, true ); // Create new object, adding 2nd to 1st
+            m2 = new Matrix<T>(a10, a11, true ); // Create new object, adding 2nd to 1st
+            m3 = new Matrix<T>(a00            ); // Make a copy...
+            m4 = new Matrix<T>(a11            ); // Make a copy...
+            m5 = new Matrix<T>(a00, a01, true ); // Create new object, adding 2nd to 1st
+            m6 = new Matrix<T>(a10, a00, false); // Create new object, subtracting 2nd from 1st
+            m7 = new Matrix<T>(a01, a11, false); // Create new object, subtracting 2nd from 1st
+            b1 = new Matrix<T>(b00, b11, true ); // Create new object, adding 2nd to 1st
+            b2 = new Matrix<T>(b00            ); // Make a copy... -----------------------------Should be able to get away with a pointer copy... - not with the memory deallocation that follows...
+            b3 = new Matrix<T>(b01, b11, false); // Create new object, subtracting 2nd from 1st
+            b4 = new Matrix<T>(b10, b00, false); // Create new object, adding 2nd to 1st
+            b5 = new Matrix<T>(b11            ); // Make a copy... -----------------------------Should be able to get away with a pointer copy... - not with the memory deallocation that follows...
+            b6 = new Matrix<T>(b00, b01, true ); // Create new object, subtracting 2nd from 1st
+            b7 = new Matrix<T>(b10, b11, true ); // Create new object, adding 2nd to 1st
+         }
+         else
+         {
+            t[1]  = std::thread(&Matrix<T>::addFill, &a00, std::ref(a11), std::ref(m1), true );
+            t[2]  = std::thread(&Matrix<T>::addFill, &a10, std::ref(a11), std::ref(m2), true );
+            t[3]  = std::thread(&Matrix<T>::copyTo , &a00               , std::ref(m3)       );
+            t[4]  = std::thread(&Matrix<T>::copyTo , &a11               , std::ref(m4)       );
+            t[5]  = std::thread(&Matrix<T>::addFill, &a00, std::ref(a01), std::ref(m5), true );
+            t[6]  = std::thread(&Matrix<T>::addFill, &a10, std::ref(a00), std::ref(m6), false);
+            t[7]  = std::thread(&Matrix<T>::addFill, &a01, std::ref(a11), std::ref(m7), false);
+            
+            t[8]  = std::thread(&Matrix<T>::addFill, &b00, std::ref(b11), std::ref(b1), true );
+            t[9]  = std::thread(&Matrix<T>::copyTo , &b00               , std::ref(b2)       );
+            t[10] = std::thread(&Matrix<T>::addFill, &b01, std::ref(b11), std::ref(b3), false);
+            t[11] = std::thread(&Matrix<T>::addFill, &b10, std::ref(b00), std::ref(b4), false);
+            t[12] = std::thread(&Matrix<T>::copyTo , &b11               , std::ref(b5)       );
+            t[13] = std::thread(&Matrix<T>::addFill, &b00, std::ref(b01), std::ref(b6), true );
+            t[14] = std::thread(&Matrix<T>::addFill, &b10, std::ref(b11), std::ref(b7), true );
+            
+            for (int i = 1; i < 15; ++i)
+            {
+               t[i].join();
+            }
+         }
+         
+         // Clear out allocated memory....
+         b00.erase();
+         b01.erase();
+         b10.erase();
+         b11.erase();
+         // We don't need matrixB data anymore. Erase it.
+         matrixB.erase();
          
          // Get the 7 multiplication results
          // m1 = (a00 + a11) * (b00 + b11);
@@ -643,23 +844,51 @@ public:
          if (mSize > thread_Start)
          {
             // Matrix is too large. Slow down to save memory...
-            m1.mult_wrapper((b00 + b11), null);
-            m2.mult_wrapper((b00)      , null);
-            m3.mult_wrapper((b01 - b11), null);
-            m4.mult_wrapper((b10 - b00), null);
-            m5.mult_wrapper((b11)      , null);
-            m6.mult_wrapper((b00 + b01), null);
-            m7.mult_wrapper((b10 + b11), null);
+            //m1.mult_wrapper((b00 + b11), null);
+            //m2.mult_wrapper((b00)      , null);
+            //m3.mult_wrapper((b01 - b11), null);
+            //m4.mult_wrapper((b10 - b00), null);
+            //m5.mult_wrapper((b11)      , null);
+            //m6.mult_wrapper((b00 + b01), null);
+            //m7.mult_wrapper((b10 + b11), null);
+            //m1.mult_FarmSlave(b1, null);
+            //m2.mult_FarmSlave(b2, null);
+            //m3.mult_FarmSlave(b3, null);
+            //m4.mult_FarmSlave(b4, null);
+            //m5.mult_FarmSlave(b5, null);
+            //m6.mult_FarmSlave(b6, null);
+            //m7.mult_FarmSlave(b7, null);
+            m1->mult_FarmSlave(*b1, null);
+            m2->mult_FarmSlave(*b2, null);
+            m3->mult_FarmSlave(*b3, null);
+            m4->mult_FarmSlave(*b4, null);
+            m5->mult_FarmSlave(*b5, null);
+            m6->mult_FarmSlave(*b6, null);
+            m7->mult_FarmSlave(*b7, null);
          }
          else if (mSize > thread_Stop)
          {
-            t[1] = std::thread(&Matrix<T>::mult_FarmSlave, &m1, (b00 + b11), null);
-            t[2] = std::thread(&Matrix<T>::mult_FarmSlave, &m2, (b00)      , null);
-            t[3] = std::thread(&Matrix<T>::mult_FarmSlave, &m3, (b01 - b11), null);
-            t[4] = std::thread(&Matrix<T>::mult_FarmSlave, &m4, (b10 - b00), null);
-            t[5] = std::thread(&Matrix<T>::mult_FarmSlave, &m5, (b11)      , null);
-            t[6] = std::thread(&Matrix<T>::mult_FarmSlave, &m6, (b00 + b01), null);
-            t[7] = std::thread(&Matrix<T>::mult_FarmSlave, &m7, (b10 + b11), null);
+            //t[1] = std::thread(&Matrix<T>::mult_FarmSlave, &m1, (b00 + b11), null);
+            //t[2] = std::thread(&Matrix<T>::mult_FarmSlave, &m2, (b00)      , null);
+            //t[3] = std::thread(&Matrix<T>::mult_FarmSlave, &m3, (b01 - b11), null);
+            //t[4] = std::thread(&Matrix<T>::mult_FarmSlave, &m4, (b10 - b00), null);
+            //t[5] = std::thread(&Matrix<T>::mult_FarmSlave, &m5, (b11)      , null);
+            //t[6] = std::thread(&Matrix<T>::mult_FarmSlave, &m6, (b00 + b01), null);
+            //t[7] = std::thread(&Matrix<T>::mult_FarmSlave, &m7, (b10 + b11), null);
+            //t[1] = std::thread(&Matrix<T>::mult_FarmSlave, &m1, b1, null);
+            //t[2] = std::thread(&Matrix<T>::mult_FarmSlave, &m2, b2, null);
+            //t[3] = std::thread(&Matrix<T>::mult_FarmSlave, &m3, b3, null);
+            //t[4] = std::thread(&Matrix<T>::mult_FarmSlave, &m4, b4, null);
+            //t[5] = std::thread(&Matrix<T>::mult_FarmSlave, &m5, b5, null);
+            //t[6] = std::thread(&Matrix<T>::mult_FarmSlave, &m6, b6, null);
+            //t[7] = std::thread(&Matrix<T>::mult_FarmSlave, &m7, b7, null);
+            t[1] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m1), *b1, null);
+            t[2] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m2), *b2, null);
+            t[3] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m3), *b3, null);
+            t[4] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m4), *b4, null);
+            t[5] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m5), *b5, null);
+            t[6] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m6), *b6, null);
+            t[7] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m7), *b7, null);
          //}
          //else if (mSize > 512)
          //{
@@ -674,23 +903,58 @@ public:
          }
          else
          {
-            (a00 + a11).multStandard (b00 + b11, m1);
-            (a10 + a11).multStandard (b00      , m2);
-            (a00)      .multStandard (b01 - b11, m3);
-            (a11)      .multStandard (b10 - b00, m4);
-            (a00 + a01).multStandard (b11      , m5);
-            (a10 - a00).multStandard (b00 + b01, m6);
-            (a01 - a11).multStandard (b10 + b11, m7);
+            //(a00 + a11).multStandard (b00 + b11, m1);
+            //(a10 + a11).multStandard (b00      , m2);
+            //(a00)      .multStandard (b01 - b11, m3);
+            //(a11)      .multStandard (b10 - b00, m4);
+            //(a00 + a01).multStandard (b11      , m5);
+            //(a10 - a00).multStandard (b00 + b01, m6);
+            //(a01 - a11).multStandard (b10 + b11, m7);
+            //(a00 + a11).multStandard (b1, m1);
+            //(a10 + a11).multStandard (b2, m2);
+            //(a00)      .multStandard (b3, m3);
+            //(a11)      .multStandard (b4, m4);
+            //(a00 + a01).multStandard (b5, m5);
+            //(a10 - a00).multStandard (b6, m6);
+            //(a01 - a11).multStandard (b7, m7);
+            (a00 + a11).multStandard (*b1, *m1);
+            (a10 + a11).multStandard (*b2, *m2);
+            (a00)      .multStandard (*b3, *m3);
+            (a11)      .multStandard (*b4, *m4);
+            (a00 + a01).multStandard (*b5, *m5);
+            (a10 - a00).multStandard (*b6, *m6);
+            (a01 - a11).multStandard (*b7, *m7);
          }
+         //b1.erase();
+         //b2.erase();
+         //b3.erase();
+         //b4.erase();
+         //b5.erase();
+         //b6.erase();
+         //b7.erase();
+         //b1->erase();
+         //b2->erase();
+         //b3->erase();
+         //b4->erase();
+         //b5->erase();
+         //b6->erase();
+         //b7->erase();
+         delete b1;
+         delete b2;
+         delete b3;
+         delete b4;
+         delete b5;
+         delete b6;
+         delete b7;
          // Clear out allocated memory....
-         b00.erase();
-         b01.erase();
-         b10.erase();
-         b11.erase();
-         // We don't need matrixB data anymore. Erase it.
-         matrixB.erase();
+         //b00.erase();
+         //b01.erase();
+         //b10.erase();
+         //b11.erase();
+         //// We don't need matrixB data anymore. Erase it.
+         //matrixB.erase();
          
-         if (mSize > thread_Stop)
+         if (mSize <= thread_Start && mSize > thread_Stop)
          {
             t[1].join();
             t[2].join();
@@ -706,10 +970,30 @@ public:
          //a01 = m3 + m5;
          //a10 = m2 + m4;
          //a11 = m1 + m3 - m2 + m6;
+         /*
          a00.op00_11(m1, m4, m5, m7);
          a01.op01_10(m3, m5);
          a10.op01_10(m2, m4);
          a11.op00_11(m1, m3, m2, m6);
+         /**/
+         if (mSize < 4096)
+         {
+            a00.op00_11(*m1, *m4, *m5, *m7);
+            a01.op01_10(*m3, *m5);
+            a10.op01_10(*m2, *m4);
+            a11.op00_11(*m1, *m3, *m2, *m6);
+         }
+         else
+         {
+            t[1] = std::thread(&Matrix<T>::op00_11, &a00, *m1, *m4, *m5, *m7);
+            t[2] = std::thread(&Matrix<T>::op01_10, &a01, *m3, *m5);
+            t[3] = std::thread(&Matrix<T>::op01_10, &a10, *m2, *m4);
+            t[4] = std::thread(&Matrix<T>::op00_11, &a11, *m1, *m3, *m2, *m6);
+            t[1].join();
+            t[2].join();
+            t[3].join();
+            t[4].join();
+         }
          //a00 = m1;
          //a00 += m4;
          //a00 -= m5;
@@ -722,6 +1006,22 @@ public:
          //a11 += m3;
          //a11 -= m2;
          //a11 += m6;
+         
+         delete m1;
+         delete m2;
+         delete m3;
+         delete m4;
+         delete m5;
+         delete m6;
+         delete m7;
+         //delete b1;
+         //delete b2;
+         //delete b3;
+         //delete b4;
+         //delete b5;
+         //delete b6;
+         //delete b7;
+         
          // The above will re-write matrixA (calling object)
          // Reassemble the quadrants into a single whole
          if (result != NULL)
@@ -960,9 +1260,10 @@ void threadedManager(int socket, unsigned int id)
    // The benefits of this are negligible on small matrices, but will greatly decrease memory
    //    usage on large matrices, with time benefits as well.
    //if (size < 8192) // big advantage first seen with 8192x8192
-   if (size < 4096)
+   if (size < 8192)
    {
       matrixA.thread_Stop = size / 4;
+      matrixA.thread_Start = size;
    }
    else
    {
