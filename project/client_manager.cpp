@@ -64,6 +64,28 @@ void parseEnv(char* envVar, string output[], int& count)
 }
 
 /****************************************************************************
+* Parse an environment variable (':' separated)
+****************************************************************************/
+void readMatrix(Matrix<int>& matrix, string file, bool& error)
+{
+   error = false;
+   ifstream inFile;
+   inFile.open(file.c_str());
+   
+   if (inFile.is_open())
+   {
+      inFile >> matrix;
+      inFile.close();
+   }
+   else 
+   {
+      cerr << Red << "Unable to open " + file << RCol << endl;
+      //return 1;
+      error = true;
+   }
+}
+
+/****************************************************************************
 * Parse the command line and environment variables
 * Read in the input matrices
 * Start the distribution
@@ -75,8 +97,10 @@ int main(int argc, char* argv[])
    int size = 32;
    ifstream inFile;
    ifstream inFile2;
+   //ofstream fout;
    string file;
    string file2;
+   string fileOut;
    char* compList;
    string port;
    // Avoid unknown errors when the environment variables aren't set...
@@ -160,12 +184,15 @@ int main(int argc, char* argv[])
    {
       file = argv[1];
       file2 = argv[2];
+      //fileOut = argv[3];
       size = atoi(argv[3]);
    }
    else if (argc == 5)
    {
       file = argv[1];
       file2 = argv[2];
+      //fileOut = argv[3];
+      //size = atoi(argv[4]);
       size = atoi(argv[3]);
       thread_Stop = atoi(argv[4]);
    }
@@ -173,6 +200,9 @@ int main(int argc, char* argv[])
    {
       file = argv[1];
       file2 = argv[2];
+      fileOut = argv[3];
+      //size = atoi(argv[4]);
+      //thread_Stop = atoi(argv[5]);
       size = atoi(argv[3]);
       thread_Stop = atoi(argv[4]);
       /// Add something here to handle entering computers by command line...
@@ -198,31 +228,41 @@ int main(int argc, char* argv[])
    //matrixA.maxThreads = 17 * 2;
    matrixA.maxThreads = 17 * 4;
 
-   inFile.open(file.c_str());
-   
-   if (inFile.is_open())
+   bool error1;
+   bool error2;
+   thread m1 = thread(readMatrix, std::ref(matrixA), file, std::ref(error1));
+   thread m2 = thread(readMatrix, std::ref(matrixB), file2, std::ref(error2));
+   m1.join();
+   m2.join();
+   if (error1 || error2)
    {
-      inFile >> matrixA;
-      inFile.close();
-   }
-   else 
-   {
-      cerr << Red << "Unable to open " + file << RCol << endl;
       return 1;
    }
-
-   inFile2.open(file2.c_str());
-   
-   if (inFile2.is_open())
-   {
-      inFile2 >> matrixB;
-      inFile2.close();
-   }
-   else 
-   {
-      cerr << Red << "Unable to open " + file2 << RCol << endl;
-      return 1;
-   }
+   //inFile.open(file.c_str());
+   //
+   //if (inFile.is_open())
+   //{
+   //   inFile >> matrixA;
+   //   inFile.close();
+   //}
+   //else 
+   //{
+   //   cerr << Red << "Unable to open " + file << RCol << endl;
+   //   return 1;
+   //}
+   //
+   //inFile2.open(file2.c_str());
+   //
+   //if (inFile2.is_open())
+   //{
+   //   inFile2 >> matrixB;
+   //   inFile2.close();
+   //}
+   //else 
+   //{
+   //   cerr << Red << "Unable to open " + file2 << RCol << endl;
+   //   return 1;
+   //}
    if (totalComputers == 1)
    {
       matrixA.mult_FarmSlave(matrixB, NULL);
@@ -235,7 +275,17 @@ int main(int argc, char* argv[])
    {
       cerr << matrixA;
    }
+   //fout.open(fileOut.c_str());
+   //for (int i = 0; i < size; ++i)
+   //{
+   //   for (int j = 0; j < size; ++j)
+   //   {
+   //   }
+   //   fout << 
+   //}
    //cerr << matrixA;
+   //fout << matrixA;
+   cerr << "Outputting result...\n";
    cout << matrixA;
 
    return 0;

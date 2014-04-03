@@ -17,7 +17,7 @@
 #include <arpa/inet.h>
 //#include <stdio.h>
 #include <stdlib.h> // Needed with c++99; for some reason included in other library for c++11/0x
-//#include <unistd.h> // Not needed anymore
+#include <unistd.h> // Needed for close()
 
 //using namespace std; //std:: // only needed for the string strError
 

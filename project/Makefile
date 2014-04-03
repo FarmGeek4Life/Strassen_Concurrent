@@ -105,6 +105,9 @@ client_test: client_manager create_huge
 	export BG_COMPUTERS="$(BG_COMPUTERS)"; \
 	export BG_PORT="$(BG_PORT)"; \
 	time ./client_manager /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+#	time ./client_manager /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt /tmp/brysoncg/$(SIZE)_temp.txt $(SIZE)
+#	diff -qs /tmp/brysoncg/$(SIZE)_temp.txt /tmp/brysoncg/$(SIZE)_1-2.txt
+#	rm /tmp/brysoncg/$(SIZE)_temp.txt
 #	time ./client_manager matrices/$(TEST_SIZE)_1.txt matrices/$(TEST_SIZE)_2.txt $(TEST_SIZE) | diff -qs - matrices/$(TEST_SIZE)_1-2.txt
 #	time ./client_manager matrices/16_1.txt  matrices/16_2.txt  16  | diff -qs - matrices/16_1-2.txt
 #	time ./client_manager matrices/32_1.txt  matrices/32_2.txt  32  | diff -qs - matrices/32_1-2.txt
