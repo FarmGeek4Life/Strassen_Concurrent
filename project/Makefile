@@ -259,6 +259,15 @@ compare_big: create_big standard standard_noThread strassen_int_opt strassen_int
 	-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
 	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
 
+compare_huge: create_huge strassen_int_opt strassen_int_opt2 strassen_int_opt_faster strassen_int_opt_large
+#ifndef SIZE
+#  $(warning Please add 'SIZE=[size]' to the command line)
+#endif
+#	-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+#	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+	-time ./strassen_int_opt_faster /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+	-time ./strassen_int_opt_large /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+
 compare_big_fast_s: create_big_fast strassen_int_opt strassen_int_opt2 strassen_int_opt_faster strassen_int_opt_large
 #ifndef SIZE
 #  $(warning Please add 'SIZE=[size]' to the command line)

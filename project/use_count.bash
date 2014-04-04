@@ -6,6 +6,8 @@ if [ $# -lt 1 ]; then
   return
 fi
 
+make server_leaf
+
 ssh_options="-o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no"
 # ConnectTimeout: fail after 10 seconds without response - seems to be iffy, use 'timeout' command and chain
 # BatchMode: Automatic 'yes' to add to known hosts
