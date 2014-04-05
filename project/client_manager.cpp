@@ -265,11 +265,21 @@ int main(int argc, char* argv[])
    //}
    if (totalComputers == 1)
    {
-      matrixA.mult_FarmSlave(matrixB, NULL);
+      if (size < 8192)
+      {
+         matrixA.thread_Stop = size / 4;
+         matrixA.thread_Start = size;
+      }
+      else
+      {
+         matrixA.thread_Stop = 512;
+         matrixA.thread_Start = matrixA.thread_Stop * 4;
+      }
+      matrixA.mult_FarmSlave(matrixB);
    }
    else
    {
-      matrixA.mult_ThreadFarming(matrixB, NULL, computers, totalComputers, port);
+      matrixA.mult_ThreadFarming(matrixB, computers, totalComputers, port);
    }
    if (*NetError && size < 128)
    {
