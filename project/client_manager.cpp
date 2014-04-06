@@ -265,7 +265,8 @@ int main(int argc, char* argv[])
    //}
    if (totalComputers == 1)
    {
-      if (size < 8192)
+      /**/
+      if (size < 4096)
       {
          matrixA.thread_Stop = size / 4;
          matrixA.thread_Start = size;
@@ -276,6 +277,9 @@ int main(int argc, char* argv[])
          matrixA.thread_Start = matrixA.thread_Stop * 4;
       }
       matrixA.mult_FarmSlave(matrixB);
+      /*/
+      matrixA.runParallel(matrixB, computers[0], port, 0);
+      /**/
    }
    else
    {
