@@ -264,7 +264,7 @@ compare_huge: create_huge strassen_int_opt_faster strassen_int_opt_fasterer stra
 #ifndef SIZE
 #  $(warning Please add 'SIZE=[size]' to the command line)
 #endif
-	-time ./strassen_int_opt_faster /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+#	-time ./strassen_int_opt_faster /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
 	-time ./strassen_int_opt_large /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
 	-time ./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
 

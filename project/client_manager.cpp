@@ -15,7 +15,7 @@
 //#include <cstdlib>
 #include <thread>
 // Trying mutual exclusion....
-#include <mutex>
+//#include <mutex>
 //#include <chrono>
 //#include <cstring>
 #include <string>
@@ -64,7 +64,7 @@ void parseEnv(char* envVar, string output[], int& count)
 }
 
 /****************************************************************************
-* Parse an environment variable (':' separated)
+* Read in a matrix from a file
 ****************************************************************************/
 void readMatrix(Matrix<int>& matrix, string file, bool& error)
 {
@@ -265,17 +265,20 @@ int main(int argc, char* argv[])
    //}
    if (totalComputers == 1)
    {
-      /**/
-      if (size < 4096)
+      /*/
+      if (size < 8192)
       {
          matrixA.thread_Stop = size / 4;
          matrixA.thread_Start = size;
       }
       else
       {
-         matrixA.thread_Stop = 512;
-         matrixA.thread_Start = matrixA.thread_Stop * 4;
+         // Prevent gross inflation of memory requirements for matrices larger than 4096
+         matrixA.thread_Stop = 2048;
+         matrixA.thread_Start = matrixA.thread_Stop * 2;
       }
+      //   matrixA.thread_Stop = 0;
+      //   matrixA.thread_Start = matrixA.thread_Stop * 4;
       matrixA.mult_FarmSlave(matrixB);
       /*/
       matrixA.runParallel(matrixB, computers[0], port, 0);

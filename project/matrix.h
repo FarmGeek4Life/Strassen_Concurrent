@@ -497,18 +497,27 @@ public:
       // It looks bad, but it works (unlike everything else I tried)
       // The ugly logic is necessary when the processor is loaded
       {
+      // Get the mutex
       std::lock_guard<std::mutex> lkA(matrixA.mMutex);
+      // If I got the mutex before the calculation thread did
       if (!matrixA.started && !matrixA.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab A!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab A!!!" << RCol << std::endl;
+         // change variables to reflect the error
          matrixA.started = true;
          matrixA.badMutexGrab = true;
+         // Drop the mutex like it's hot to prevent deadlock (on thread join)
          matrixA.mMutex.unlock();
       }
+      // If another results thread got the mutex first, then I got it, but the calculation thread hasn't got it
       else if (matrixA.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab looping A!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab looping A!!!" << RCol << std::endl;
+         // Drop the mutex like it's hot to prevent deadlock (on thread join)
          matrixA.mMutex.unlock();
+         // We do not want to continue past this point until the thread is joined,
+         //    if we did we would get bad results (race condition problems)
+         // I wish I could have a mutex that waited until it contained a certain value
          while (!matrixA.joined)
          {
             // Don't quite busy loop; this will force other threads to go.
@@ -528,19 +537,23 @@ public:
             std::cerr << "Caught std::system_error!\n";
          }
       }
+      if (!matrixA.finished)
+      {
+         std::cerr << Red << "Caught race condition: A!!!!" << RCol << std::endl;
+      }
       }
       {
       std::lock_guard<std::mutex> lkB(matrixB.mMutex);
       if (!matrixB.started && !matrixB.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab B!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab B!!!" << RCol << std::endl;
          matrixB.started = true;
          matrixB.badMutexGrab = true;
          matrixB.mMutex.unlock();
       }
       else if (matrixB.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab looping B!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab looping B!!!" << RCol << std::endl;
          matrixB.mMutex.unlock();
          while (!matrixB.joined)
          {
@@ -560,19 +573,23 @@ public:
             std::cerr << "Caught std::system_error!\n";
          }
       }
+      if (!matrixB.finished)
+      {
+         std::cerr << Red << "Caught race condition: B!!!!" << RCol << std::endl;
+      }
       }
       {
       std::lock_guard<std::mutex> lkC(matrixC.mMutex);
       if (!matrixC.started && !matrixC.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab C!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab C!!!" << RCol << std::endl;
          matrixC.started = true;
          matrixC.badMutexGrab = true;
          matrixC.mMutex.unlock();
       }
       else if (matrixC.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab looping C!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab looping C!!!" << RCol << std::endl;
          matrixC.mMutex.unlock();
          while (!matrixC.joined)
          {
@@ -592,19 +609,23 @@ public:
             std::cerr << "Caught std::system_error!\n";
          }
       }
+      if (!matrixC.finished)
+      {
+         std::cerr << Red << "Caught race condition: C!!!!" << RCol << std::endl;
+      }
       }
       {
       std::lock_guard<std::mutex> lkD(matrixD.mMutex);
       if (!matrixD.started && !matrixD.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab D!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab D!!!" << RCol << std::endl;
          matrixD.started = true;
          matrixD.badMutexGrab = true;
          matrixD.mMutex.unlock();
       }
       else if (matrixD.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab looping D!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab looping D!!!" << RCol << std::endl;
          matrixD.mMutex.unlock();
          while (!matrixD.joined)
          {
@@ -623,6 +644,10 @@ public:
          {
             std::cerr << "Caught std::system_error!\n";
          }
+      }
+      if (!matrixD.finished)
+      {
+         std::cerr << Red << "Caught race condition: D!!!!" << RCol << std::endl;
       }
       }
       for (int i = 0; i < mSize; i++)
@@ -651,14 +676,14 @@ public:
       std::lock_guard<std::mutex> lkA(matrixA.mMutex);
       if (!matrixA.started && !matrixA.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab A!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab A!!!" << RCol << std::endl;
          matrixA.started = true;
          matrixA.badMutexGrab = true;
          matrixA.mMutex.unlock();
       }
       else if (matrixA.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab looping A!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab looping A!!!" << RCol << std::endl;
          matrixA.mMutex.unlock();
          while (!matrixA.joined)
          {
@@ -678,19 +703,23 @@ public:
             std::cerr << "Caught std::system_error!\n";
          }
       }
+      if (!matrixA.finished)
+      {
+         std::cerr << Red << "Caught race condition: A!!!!" << RCol << std::endl;
+      }
       }
       {
       std::lock_guard<std::mutex> lkB(matrixB.mMutex);
       if (!matrixB.started && !matrixB.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab B!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab B!!!" << RCol << std::endl;
          matrixB.started = true;
          matrixB.badMutexGrab = true;
          matrixB.mMutex.unlock();
       }
       else if (matrixB.badMutexGrab)
       {
-         std::cerr << "Bad mutex grab looping B!!!" << std::endl;
+         std::cerr << Red << "Bad mutex grab looping B!!!" << RCol << std::endl;
          matrixB.mMutex.unlock();
          while (!matrixB.joined)
          {
@@ -709,6 +738,10 @@ public:
          {
             std::cerr << "Caught std::system_error!\n";
          }
+      }
+      if (!matrixB.finished)
+      {
+         std::cerr << Red << "Caught race condition: B!!!!" << RCol << std::endl;
       }
       }
       for (int i = 0; i < mSize; i++)
@@ -1417,7 +1450,7 @@ public:
    void mult_Fast_Slave(Matrix<T>* a0, Matrix<T>* a1, bool addA, Matrix<T>* b0, Matrix<T>* b1, bool addB)
    {
       // Take over the lock for this matrix.....
-      std::lock_guard<std::mutex> lk(mMutex);
+      //std::lock_guard<std::mutex> lk(mMutex);
       //ctlMut.unlock();
       //{
       //std::lock_guard<std::mutex> stLk(mut);
@@ -1463,28 +1496,29 @@ public:
       //{
       //   std::cerr << Red << "FS: FAILED TO LOCK!!!!!" << RCol << std::endl;
       //}
-      std::mutex* pMutex = &mMutex;
-      if (wrapped)
-      {
-         //std::cerr << "FS: using wrapper lock!\n";
-         pMutex = &mWMutex;
-      }
-      else
-      {
-         //mMutex.unlock(); // Allow the lock_guard to work.
-         //std::cerr << "FS: Grabbing object lock!\n";
-      }
-      //std::lock_guard<std::mutex> lk(mMutex);
-      std::lock_guard<std::mutex> lk(*pMutex);
-      started = true;
+      //std::mutex* pMutex = &mMutex;
+      //if (wrapped)
+      //{
+      //   //std::cerr << "FS: using wrapper lock!\n";
+      //   pMutex = &mWMutex;
+      //}
+      //else
+      //{
+      //   //mMutex.unlock(); // Allow the lock_guard to work.
+      //   //std::cerr << "FS: Grabbing object lock!\n";
+      //}
+      ////std::lock_guard<std::mutex> lk(mMutex);
+      //std::lock_guard<std::mutex> lk(*pMutex);
+      //started = true;
       /**/
       if (mSize < 512 && mSize > 1 && mSize <= thread_Stop)
       {
-      
+         //std::cerr << "In single catch-all\n";
          // This is, oddly enough, about 1 second faster for 2048x2048...
          Matrix<T> mA(*this);
          multStandard3(mA, matrixB);
          //multStandard4(matrixB);
+         //std::cerr << "In single catch-all: exit\n";
       }
       else if (mSize > 1)
       /*/
@@ -1617,6 +1651,7 @@ public:
          // Split for the thread number optimization
          if (mSize > thread_Start)
          {
+         //std::cerr << "In thread_start\n";
             // Matrix is too large. Slow down to save memory...
             /**/
             //m1.mult_wrapper((b00 + b11), null);
@@ -1681,6 +1716,7 @@ public:
          }
          else if (mSize > thread_Stop)
          {
+         //std::cerr << "In thread_stop\n";
             /**/
             //t[1] = std::thread(&Matrix<T>::mult_FarmSlave, &m1, (b00 + b11), null);
             //t[2] = std::thread(&Matrix<T>::mult_FarmSlave, &m2, (b00)      , null);
@@ -1726,6 +1762,13 @@ public:
             t[5] = std::thread(&Matrix<T>::mult_Fast_Slave, &m5, &a00, &a01 , true , &b11,  null, false);
             t[6] = std::thread(&Matrix<T>::mult_Fast_Slave, &m6, &a10, &a00 , false, &b00, &b01 , true );
             t[7] = std::thread(&Matrix<T>::mult_Fast_Slave, &m7, &a01, &a11 , false, &b10, &b11 , true );
+            t[1].join();
+            t[2].join();
+            t[3].join();
+            t[4].join();
+            t[5].join();
+            t[6].join();
+            t[7].join();
             /**/
             /*/
             //t[1] = std::thread(&Matrix<T>::mult_FarmSlave, &m1, b1, null);
@@ -1746,6 +1789,7 @@ public:
          }
          else if (mSize > 512)
          {
+         //std::cerr << "In >512\n";
          //   // At the moment, this appears to slow down execution
          //   m1.mult_wrapper (b00 + b11, null);
          //   m2.mult_wrapper (b00      , null);
@@ -1960,25 +2004,27 @@ public:
          //while (!m5.started && !m5.finished); std::cerr << Red << "Exiting busy loops 5..." << RCol << "\n";
          //while (!m6.started && !m6.finished); std::cerr << Red << "Exiting busy loops 6..." << RCol << "\n";
          //while (!m7.started && !m7.finished); std::cerr << Red << "Exiting busy loops 7..." << RCol << "\n";
-         if (mSize > thread_Stop && mSize <= thread_Start)
-         //if ((mSize > thread_Stop && mSize <= thread_Start) || mSize <= 512)
-         {
-         t[12] = std::thread(&Matrix<T>::op00_11_con, &a00, std::ref(m1), std::ref(m4), std::ref(m5), std::ref(m7), t, 1, 4, 5, 7);
-         t[13] = std::thread(&Matrix<T>::op01_10_con, &a01, std::ref(m3), std::ref(m5), t, 3, 5);
-         t[14] = std::thread(&Matrix<T>::op01_10_con, &a10, std::ref(m2), std::ref(m4), t, 2, 4);
-         t[15] = std::thread(&Matrix<T>::op00_11_con, &a11, std::ref(m1), std::ref(m3), std::ref(m2), std::ref(m6), t, 1, 3, 2, 6);
-         t[12].join();
-         t[13].join();
-         t[14].join();
-         t[15].join();
-         }
-         else
-         {
+         //if (mSize > thread_Stop && mSize <= thread_Start)
+         ////if ((mSize > thread_Stop && mSize <= thread_Start) || mSize <= 512)
+         //{
+         //std::cerr << "In join math\n";
+         //t[12] = std::thread(&Matrix<T>::op00_11_con, &a00, std::ref(m1), std::ref(m4), std::ref(m5), std::ref(m7), t, 1, 4, 5, 7);
+         //t[13] = std::thread(&Matrix<T>::op01_10_con, &a01, std::ref(m3), std::ref(m5), t, 3, 5);
+         //t[14] = std::thread(&Matrix<T>::op01_10_con, &a10, std::ref(m2), std::ref(m4), t, 2, 4);
+         //t[15] = std::thread(&Matrix<T>::op00_11_con, &a11, std::ref(m1), std::ref(m3), std::ref(m2), std::ref(m6), t, 1, 3, 2, 6);
+         //t[12].join();
+         //t[13].join();
+         //t[14].join();
+         //t[15].join();
+         //}
+         //else
+         //{
+         //std::cerr << "In plain math\n";
             a00.op00_11(m1, m4, m5, m7);
             a01.op01_10(m3, m5);
             a10.op01_10(m2, m4);
             a11.op00_11(m1, m3, m2, m6);
-         }
+         //}
          //}
          /*/
          if (mSize < 4096)
@@ -2033,6 +2079,7 @@ public:
          //{
          //   *result = Matrix(a00, a01, a10, a11);
          //}
+         //std::cerr << "Main catch-all: exit\n";
       }
       else
       {
@@ -2043,7 +2090,7 @@ public:
          //}
          mRows[0][0] = mRows[0][0] * matrixB[0][0];
       }
-      finished = true;
+      //finished = true;
    }
    
    /**************************************************************************
@@ -2069,8 +2116,8 @@ public:
    void multStandard(const Matrix<T>& matrixB, Matrix<T>& result) const
    {
       // Take over the lock for result matrix.....
-      std::lock_guard<std::mutex> lk(result.mMutex);
-      result.started = true;
+      //std::lock_guard<std::mutex> lk(result.mMutex);
+      //result.started = true;
       for (int i = 0; i < mSize; ++i)
       {
          for (int j = 0; j < mSize; ++j )
@@ -2082,7 +2129,7 @@ public:
             }
          }
       }
-      result.finished = true;
+      //result.finished = true;
       //std::cerr << "Exiting mult_standard...\n";
       //return result;
    }
@@ -2107,12 +2154,12 @@ public:
       //   mMutex.unlock();
       //}
       // Take over the lock for this matrix.....
-      std::lock_guard<std::mutex> lk(mMutex);
+      //std::lock_guard<std::mutex> lk(mMutex);
       //{
       //std::lock_guard<std::mutex> stLk(mut);
       //--startBlock;
       //}
-      started = true;
+      //started = true;
       //ctlMut.unlock();
       // Allocate the memory and fill it with the specified data...
       this->reallocate();
@@ -2183,7 +2230,7 @@ public:
    *********************************************************************/
    void multStandard3(const Matrix<T>& matrixA, const Matrix<T>& matrixB)
    {
-      started = true;
+      //started = true;
       for (int i = 0; i < mSize; i++)
       {
          for (int j = 0; j < mSize; j++)
@@ -2195,7 +2242,7 @@ public:
             }
          }
       }
-      finished = true;
+      //finished = true;
    }
    
    /*********************************************************************
@@ -2203,7 +2250,7 @@ public:
    *********************************************************************/
    void multStandard4(const Matrix<T>& matrixB)
    {
-      started = true;
+      //started = true;
       T** rows;
       rows = new T*[mSize];
       for (int i = 0; i < mSize; i++)
@@ -2225,7 +2272,7 @@ public:
       }
       delete [] rows;
       
-      finished = true;
+      //finished = true;
    }
    
    /************************************************************************
@@ -2421,8 +2468,9 @@ void threadedManager(int socket, unsigned int id)
    }
    else
    {
-      matrixA.thread_Stop = 512;
-      matrixA.thread_Start = matrixA.thread_Stop * 4;
+      // Prevent gross inflation of memory requirements for matrices larger than 4096
+      matrixA.thread_Stop = 2048;
+      matrixA.thread_Start = matrixA.thread_Stop * 2;
    }
    //matrixA.thread_Stop = size / 4;
    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
