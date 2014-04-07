@@ -26,8 +26,6 @@
 // Signal handling....
 #include <signal.h>
 #include <errno.h>
-// For fixed-width integer types
-#include <cstdint>
 
 using namespace std;
 

@@ -19,7 +19,7 @@
 #include <thread>
 // Trying mutual exclusion....
 #include <mutex>
-#include <chrono>
+//#include <chrono>
 //#include <condition_variable>
 //#include <cstring>
 //#include <string>
@@ -464,17 +464,6 @@ public:
       return *this;
    }
    
-   //bool status(bool* check, bool desired)
-   //{
-   //   return (*check == desired);
-   //}
-   //
-   //bool checkFinished()
-   //{
-   //   return !finished;
-   //}
-   
-   //std::condition_variable mCV;
    std::mutex mMutex;
    std::mutex mCVMutex;
    std::mutex mWMutex;
@@ -483,16 +472,8 @@ public:
    /********************************************************************************************
    * Opportunistic math: as soon as the necessary threads complete, do the math
    ********************************************************************************************/
-   //Matrix<T>& op00_11(const Matrix<T>& matrixA, const Matrix<T>& matrixB, const Matrix<T>& matrixC, const Matrix<T>& matrixD)
-   //Matrix<T>& op00_11_con(const Matrix<T>& matrixA, const Matrix<T>& matrixB, const Matrix<T>& matrixC, const Matrix<T>& matrixD, std::thread* tA, std::thread* tB, std::thread* tC, std::thread* tD)
    Matrix<T>& op00_11_con(Matrix<T>& matrixA, Matrix<T>& matrixB, Matrix<T>& matrixC, Matrix<T>& matrixD, std::thread t[], int tA, int tB, int tC, int tD)
    {
-      //std::chrono::milliseconds wait = std::chrono::milliseconds(1000);
-      //{
-      //std::unique_lock<std::mutex> lkA(matrixA.mCVMutex);
-      //std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
-      //matrixA.mCV.wait_until(lkA, now + wait);
-      //}
       // Logic to prevent math until the specified threads complete
       // It looks bad, but it works (unlike everything else I tried)
       // The ugly logic is necessary when the processor is loaded
@@ -537,10 +518,6 @@ public:
             std::cerr << "Caught std::system_error!\n";
          }
       }
-      if (!matrixA.finished)
-      {
-         std::cerr << Red << "Caught race condition: A!!!!" << RCol << std::endl;
-      }
       }
       {
       std::lock_guard<std::mutex> lkB(matrixB.mMutex);
@@ -572,10 +549,6 @@ public:
          {
             std::cerr << "Caught std::system_error!\n";
          }
-      }
-      if (!matrixB.finished)
-      {
-         std::cerr << Red << "Caught race condition: B!!!!" << RCol << std::endl;
       }
       }
       {
@@ -609,10 +582,6 @@ public:
             std::cerr << "Caught std::system_error!\n";
          }
       }
-      if (!matrixC.finished)
-      {
-         std::cerr << Red << "Caught race condition: C!!!!" << RCol << std::endl;
-      }
       }
       {
       std::lock_guard<std::mutex> lkD(matrixD.mMutex);
@@ -645,11 +614,8 @@ public:
             std::cerr << "Caught std::system_error!\n";
          }
       }
-      if (!matrixD.finished)
-      {
-         std::cerr << Red << "Caught race condition: D!!!!" << RCol << std::endl;
       }
-      }
+      // Now actually do the math.
       for (int i = 0; i < mSize; i++)
       {
          for (int j = 0; j < mSize; j++)
@@ -663,15 +629,8 @@ public:
    /********************************************************************************************
    * Opportunistic math: as soon as the necessary threads complete, do the math
    ********************************************************************************************/
-   //Matrix<T>& op01_10(const Matrix<T>& matrixA, const Matrix<T>& matrixB)
    Matrix<T>& op01_10_con(Matrix<T>& matrixA, Matrix<T>& matrixB, std::thread t[], int tA, int tB)
    {
-      //std::chrono::milliseconds wait = std::chrono::milliseconds(1000);
-      //{
-      //std::unique_lock<std::mutex> lkA(matrixA.mCVMutex);
-      //std::chrono::time_point<std::chrono::system_clock> now = std::chrono::system_clock::now();
-      //matrixA.mCV.wait_until(lkA, now + wait);
-      //}
       {
       std::lock_guard<std::mutex> lkA(matrixA.mMutex);
       if (!matrixA.started && !matrixA.badMutexGrab)
@@ -702,10 +661,6 @@ public:
          {
             std::cerr << "Caught std::system_error!\n";
          }
-      }
-      if (!matrixA.finished)
-      {
-         std::cerr << Red << "Caught race condition: A!!!!" << RCol << std::endl;
       }
       }
       {
@@ -739,11 +694,8 @@ public:
             std::cerr << "Caught std::system_error!\n";
          }
       }
-      if (!matrixB.finished)
-      {
-         std::cerr << Red << "Caught race condition: B!!!!" << RCol << std::endl;
       }
-      }
+      // Now actually do the math.
       for (int i = 0; i < mSize; i++)
       {
          for (int j = 0; j < mSize; j++)
@@ -889,7 +841,6 @@ public:
       }
       else
       {
-         //*this = *a0;
          this->allocCopy(*a0);
       }
       Matrix<T> matrixB(mSize, false); // Declare but don't allocate
@@ -899,19 +850,9 @@ public:
       }
       else
       {
-         //matrixB = *b0;
          matrixB.allocCopy(*b0);
       }
-      //mult_ThreadFarming(matrixB, NULL, computers, numComputers, port, true);
       mult_ThreadFarming(matrixB, computers, numComputers, port, true);
-   }
-   
-   
-   //void mult_FarmWrapper(Matrix<T> matrixB, Matrix<T>* result, std::string computers[], int numComputers, std::string port, bool wrapped = false)
-   void mult_FarmWrapper(Matrix<T> matrixB, std::string computers[], int numComputers, std::string port, bool wrapped = false)
-   {
-      //this->mult_ThreadFarming(matrixB, result, computers, numComputers, port, wrapped);
-      this->mult_ThreadFarming(matrixB, computers, numComputers, port, wrapped);
    }
    
    /**************************************************************************
@@ -919,21 +860,14 @@ public:
     * The input matrices must be equal in size and square, 
     *    and the size must be n x n, where n is a power of 2
     *************************************************************************/
-   //void mult_ThreadFarming(Matrix<T>& matrixB, Matrix<T>* result, std::string computers[], int numComputers, std::string port, bool wrapped = false)
    void mult_ThreadFarming(Matrix<T>& matrixB, std::string computers[], int numComputers, std::string port, bool wrapped = false)
    {
       // Take over the lock for this matrix.....
       std::mutex* pMutex = &mMutex;
       if (wrapped)
       {
-         //std::cerr << "TF: using wrapper lock!\n";
          pMutex = &mWMutex;
       }
-      else
-      {
-         //std::cerr << "TF: Grabbing object lock!\n";
-      }
-      //std::lock_guard<std::mutex> lk(mMutex);
       std::lock_guard<std::mutex> lk(*pMutex);
       started = true;
       if (mSize > 1)
@@ -951,15 +885,6 @@ public:
          Matrix<T> b11(matrixB, 1, 1);
          
          // Temporary Matrices to hold the 7 multiplication results
-         // Initialize to the left side of the multiplication...
-         /**/
-         //Matrix<T> m1(a00, a11, true ); // Create new object, adding 2nd to 1st
-         //Matrix<T> m2(a10, a11, true ); // Create new object, adding 2nd to 1st
-         //Matrix<T> m3(a00            ); // Make a copy...
-         //Matrix<T> m4(a11            ); // Make a copy...
-         //Matrix<T> m5(a00, a01, true ); // Create new object, adding 2nd to 1st
-         //Matrix<T> m6(a10, a00, false); // Create new object, subtracting 2nd from 1st
-         //Matrix<T> m7(a01, a11, false); // Create new object, subtracting 2nd from 1st
          Matrix<T> m1(mSize / 2, false); // Declare matrix, but do not allocate
          Matrix<T> m2(mSize / 2, false); // Declare matrix, but do not allocate
          Matrix<T> m3(mSize / 2, false); // Declare matrix, but do not allocate
@@ -968,90 +893,6 @@ public:
          Matrix<T> m6(mSize / 2, false); // Declare matrix, but do not allocate
          Matrix<T> m7(mSize / 2, false); // Declare matrix, but do not allocate
          Matrix<int>* null = NULL;
-         //a00.erase();
-         //a01.erase();
-         //a10.erase();
-         //a11.erase();
-         //this->erase(); // Must reallocate later...
-         /*/
-         Matrix<T> *m1;
-         Matrix<T> *m2;
-         Matrix<T> *m3;
-         Matrix<T> *m4;
-         Matrix<T> *m5;
-         Matrix<T> *m6;
-         Matrix<T> *m7;
-         Matrix<T> *b1;
-         Matrix<T> *b2;
-         Matrix<T> *b3;
-         Matrix<T> *b4;
-         Matrix<T> *b5;
-         Matrix<T> *b6;
-         Matrix<T> *b7;
-         Matrix<int>* null = NULL;
-         
-         if (mSize < 4096)
-         {
-            m1 = new Matrix<T>(a00, a11, true ); // Create new object, adding 2nd to 1st
-            m2 = new Matrix<T>(a10, a11, true ); // Create new object, adding 2nd to 1st
-            m3 = new Matrix<T>(a00            ); // Make a copy...
-            m4 = new Matrix<T>(a11            ); // Make a copy...
-            m5 = new Matrix<T>(a00, a01, true ); // Create new object, adding 2nd to 1st
-            m6 = new Matrix<T>(a10, a00, false); // Create new object, subtracting 2nd from 1st
-            m7 = new Matrix<T>(a01, a11, false); // Create new object, subtracting 2nd from 1st
-            b1 = new Matrix<T>(b00, b11, true ); // Create new object, adding 2nd to 1st
-            b2 = new Matrix<T>(b00            ); // Make a copy... -----------------------------Should be able to get away with a pointer copy... - not with the memory deallocation that follows...
-            b3 = new Matrix<T>(b01, b11, false); // Create new object, subtracting 2nd from 1st
-            b4 = new Matrix<T>(b10, b00, false); // Create new object, adding 2nd to 1st
-            b5 = new Matrix<T>(b11            ); // Make a copy... -----------------------------Should be able to get away with a pointer copy... - not with the memory deallocation that follows...
-            b6 = new Matrix<T>(b00, b01, true ); // Create new object, subtracting 2nd from 1st
-            b7 = new Matrix<T>(b10, b11, true ); // Create new object, adding 2nd to 1st
-         }
-         else
-         {
-            t[1]  = std::thread(&Matrix<T>::addFill, &a00, std::ref(a11), std::ref(m1), true );
-            t[2]  = std::thread(&Matrix<T>::addFill, &a10, std::ref(a11), std::ref(m2), true );
-            t[3]  = std::thread(&Matrix<T>::copyTo , &a00               , std::ref(m3)       );
-            t[4]  = std::thread(&Matrix<T>::copyTo , &a11               , std::ref(m4)       );
-            t[5]  = std::thread(&Matrix<T>::addFill, &a00, std::ref(a01), std::ref(m5), true );
-            t[6]  = std::thread(&Matrix<T>::addFill, &a10, std::ref(a00), std::ref(m6), false);
-            t[7]  = std::thread(&Matrix<T>::addFill, &a01, std::ref(a11), std::ref(m7), false);
-            
-            t[8]  = std::thread(&Matrix<T>::addFill, &b00, std::ref(b11), std::ref(b1), true );
-            t[9]  = std::thread(&Matrix<T>::copyTo , &b00               , std::ref(b2)       );
-            t[10] = std::thread(&Matrix<T>::addFill, &b01, std::ref(b11), std::ref(b3), false);
-            t[11] = std::thread(&Matrix<T>::addFill, &b10, std::ref(b00), std::ref(b4), false);
-            t[12] = std::thread(&Matrix<T>::copyTo , &b11               , std::ref(b5)       );
-            t[13] = std::thread(&Matrix<T>::addFill, &b00, std::ref(b01), std::ref(b6), true );
-            t[14] = std::thread(&Matrix<T>::addFill, &b10, std::ref(b11), std::ref(b7), true );
-            
-            t[1] .join();
-            t[2] .join();
-            t[3] .join();
-            t[4] .join();
-            t[5] .join();
-            t[6] .join();
-            t[7] .join();
-            t[8] .join();
-            t[9] .join();
-            t[10].join();
-            t[11].join();
-            t[12].join();
-            t[13].join();
-            t[14].join();
-            //for (int i = 1; i < 15; ++i)
-            //{
-            //   t[i].join();
-            //}
-         }
-         // Clear out allocated memory....
-         b00.erase();
-         b01.erase();
-         b10.erase();
-         b11.erase();
-         // We don't need matrixB data anymore. Erase it.
-         matrixB.erase();
-         /**/
          
          // Get the 7 multiplication results
          // m1 = (a00 + a11) * (b00 + b11);
@@ -1061,35 +902,10 @@ public:
          // m5 = (a00 + a01) *  b11;
          // m6 = (a10 - a00) * (b00 + b01);
          // m7 = (a01 - a11) * (b10 + b11);
-         //{
-         //std::lock_guard<std::mutex> lock(threadLimiter[0]);
-         // Split for the thread number optimization
+         
          // It makes no sense to split into smaller chunks for 7 computers
          if (mSize > thread_Stop && numComputers != 7 && numComputers != 1)
          {
-            /*/
-            t[1] = std::thread(&Matrix<T>::mult_FarmWrapper, &m1, (b00 + b11), null, computers, numComputers, port, false);
-            t[2] = std::thread(&Matrix<T>::mult_FarmWrapper, &m2, (b00)      , null, computers, numComputers, port, false);
-            t[3] = std::thread(&Matrix<T>::mult_FarmWrapper, &m3, (b01 - b11), null, computers, numComputers, port, false);
-            t[4] = std::thread(&Matrix<T>::mult_FarmWrapper, &m4, (b10 - b00), null, computers, numComputers, port, false);
-            t[5] = std::thread(&Matrix<T>::mult_FarmWrapper, &m5, (b11)      , null, computers, numComputers, port, false);
-            t[6] = std::thread(&Matrix<T>::mult_FarmWrapper, &m6, (b00 + b01), null, computers, numComputers, port, false);
-            t[7] = std::thread(&Matrix<T>::mult_FarmWrapper, &m7, (b10 + b11), null, computers, numComputers, port, false);
-            //t[1] = std::thread(&Matrix<T>::mult_ThreadFarming, &m1, (b00 + b11), null, computers, numComputers, port);
-            //t[2] = std::thread(&Matrix<T>::mult_ThreadFarming, &m2, (b00)      , null, computers, numComputers, port);
-            //t[3] = std::thread(&Matrix<T>::mult_ThreadFarming, &m3, (b01 - b11), null, computers, numComputers, port);
-            //t[4] = std::thread(&Matrix<T>::mult_ThreadFarming, &m4, (b10 - b00), null, computers, numComputers, port);
-            //t[5] = std::thread(&Matrix<T>::mult_ThreadFarming, &m5, (b11)      , null, computers, numComputers, port);
-            //t[6] = std::thread(&Matrix<T>::mult_ThreadFarming, &m6, (b00 + b01), null, computers, numComputers, port);
-            //t[7] = std::thread(&Matrix<T>::mult_ThreadFarming, &m7, (b10 + b11), null, computers, numComputers, port);
-            /*/
-            //t[1] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m1), std::ref(*b1), null, computers, numComputers, port);
-            //t[2] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m2), std::ref(*b2), null, computers, numComputers, port);
-            //t[3] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m3), std::ref(*b3), null, computers, numComputers, port);
-            //t[4] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m4), std::ref(*b4), null, computers, numComputers, port);
-            //t[5] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m5), std::ref(*b5), null, computers, numComputers, port);
-            //t[6] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m6), std::ref(*b6), null, computers, numComputers, port);
-            //t[7] = std::thread(&Matrix<T>::mult_ThreadFarming, &(*m7), std::ref(*b7), null, computers, numComputers, port);
             t[1] = std::thread(&Matrix<T>::mult_Fast_Farm, &m1, &a00, &a11 , true , &b00, &b11 , true , computers, numComputers, port);
             t[2] = std::thread(&Matrix<T>::mult_Fast_Farm, &m2, &a10, &a11 , true , &b00,  null, false, computers, numComputers, port);
             t[3] = std::thread(&Matrix<T>::mult_Fast_Farm, &m3, &a00,  null, false, &b01, &b11 , false, computers, numComputers, port);
@@ -1097,35 +913,11 @@ public:
             t[5] = std::thread(&Matrix<T>::mult_Fast_Farm, &m5, &a00, &a01 , true , &b11,  null, false, computers, numComputers, port);
             t[6] = std::thread(&Matrix<T>::mult_Fast_Farm, &m6, &a10, &a00 , false, &b00, &b01 , true , computers, numComputers, port);
             t[7] = std::thread(&Matrix<T>::mult_Fast_Farm, &m7, &a01, &a11 , false, &b10, &b11 , true , computers, numComputers, port);
-            /**/
          }
          else
          {
             // Mutex: control the access to the system counter (sysCounter) for even distribution
             std::lock_guard<std::mutex> lock(sysCounter_Mutex);
-            /*/
-            t[1] = std::thread(&Matrix<T>::runParallel, &m1, (b00 + b11), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[2] = std::thread(&Matrix<T>::runParallel, &m2, (b00)      , null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[3] = std::thread(&Matrix<T>::runParallel, &m3, (b01 - b11), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[4] = std::thread(&Matrix<T>::runParallel, &m4, (b10 - b00), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[5] = std::thread(&Matrix<T>::runParallel, &m5, (b11)      , null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[6] = std::thread(&Matrix<T>::runParallel, &m6, (b00 + b01), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            t[7] = std::thread(&Matrix<T>::runParallel, &m7, (b10 + b11), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            /*/
-            //t[1] = std::thread(&Matrix<T>::runParallel, &(*m1), std::ref(*b1), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[2] = std::thread(&Matrix<T>::runParallel, &(*m2), std::ref(*b2), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[3] = std::thread(&Matrix<T>::runParallel, &(*m3), std::ref(*b3), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[4] = std::thread(&Matrix<T>::runParallel, &(*m4), std::ref(*b4), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[5] = std::thread(&Matrix<T>::runParallel, &(*m5), std::ref(*b5), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[6] = std::thread(&Matrix<T>::runParallel, &(*m6), std::ref(*b6), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[7] = std::thread(&Matrix<T>::runParallel, &(*m7), std::ref(*b7), null, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[1] = std::thread(&Matrix<T>::runParallel, &m1, &a00, &a11 , true , &b00, &b11 , true , computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[2] = std::thread(&Matrix<T>::runParallel, &m2, &a10, &a11 , true , &b00,  null, false, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[3] = std::thread(&Matrix<T>::runParallel, &m3, &a00,  null, false, &b01, &b11 , false, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[4] = std::thread(&Matrix<T>::runParallel, &m4, &a11,  null, false, &b10, &b00 , false, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[5] = std::thread(&Matrix<T>::runParallel, &m5, &a00, &a01 , true , &b11,  null, false, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[6] = std::thread(&Matrix<T>::runParallel, &m6, &a10, &a00 , false, &b00, &b01 , true , computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            //t[7] = std::thread(&Matrix<T>::runParallel, &m7, &a01, &a11 , false, &b10, &b11 , true , computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
             t[1] = std::thread(&Matrix<T>::runParallel_Fast, &m1, &a00, &a11 , true , &b00, &b11 , true , computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
             t[2] = std::thread(&Matrix<T>::runParallel_Fast, &m2, &a10, &a11 , true , &b00,  null, false, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
             t[3] = std::thread(&Matrix<T>::runParallel_Fast, &m3, &a00,  null, false, &b01, &b11 , false, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
@@ -1133,37 +925,7 @@ public:
             t[5] = std::thread(&Matrix<T>::runParallel_Fast, &m5, &a00, &a01 , true , &b11,  null, false, computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
             t[6] = std::thread(&Matrix<T>::runParallel_Fast, &m6, &a10, &a00 , false, &b00, &b01 , true , computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
             t[7] = std::thread(&Matrix<T>::runParallel_Fast, &m7, &a01, &a11 , false, &b10, &b11 , true , computers[sysCounter % numComputers], port, sysCounter); ++sysCounter;
-            /**/
          }
-         // Clear out allocated memory....
-         //b00.erase();
-         //b01.erase();
-         //b10.erase();
-         //b11.erase();
-         //// Also include matrixB
-         //matrixB.erase();
-         //}
-         //t[1].join();
-         //t[2].join();
-         //t[3].join();
-         //t[4].join();
-         //t[5].join();
-         //t[6].join();
-         //t[7].join();
-         
-         //b1->erase();
-         //b2->erase();
-         //b3->erase();
-         //b4->erase();
-         //b5->erase();
-         //b6->erase();
-         //b7->erase();
-         
-         //this->reallocate(); // Reallocate the memory...
-         //Matrix<T> c00(*this, 0, 0);
-         //Matrix<T> c01(*this, 0, 1);
-         //Matrix<T> c10(*this, 1, 0);
-         //Matrix<T> c11(*this, 1, 1);
          
          // Use the 7 multiplication results to get the results for each quadrant
          // Save on memory usage by reusing one set of quadrants
@@ -1172,123 +934,22 @@ public:
          //a01 = m3 + m5;
          //a10 = m2 + m4;
          //a11 = m1 + m3 - m2 + m6;
-         /*/
-         a00.op00_11(m1, m4, m5, m7);
-         a01.op01_10(m3, m5);
-         a10.op01_10(m2, m4);
-         a11.op00_11(m1, m3, m2, m6);
-         /*/
-         //if (mSize < 2048)
-         //{
-         //   //a00.op00_11(m1, m4, m5, m7);
-         //   //a01.op01_10(m3, m5);
-         //   //a10.op01_10(m2, m4);
-         //   //a11.op00_11(m1, m3, m2, m6);
-         //   //t[1].join();
-         //   //t[4].join();
-         //   //t[5].join();
-         //   //t[7].join();
-         //   //c00.op00_11(m1, m4, m5, m7);
-         //   //t[3].join();
-         //   //c01.op01_10(m3, m5);
-         //   //t[2].join();
-         //   //c10.op01_10(m2, m4);
-         //   //t[6].join();
-         //   //c11.op00_11(m1, m3, m2, m6);
-         //   //c00.op00_11_con(m1, m4, m5, m7, &t[1], &t[4], &t[5], &t[7]);
-         //   //c01.op01_10_con(m3, m5, &t[3], &t[5]);
-         //   //c10.op01_10_con(m2, m4, &t[2], &t[4]);
-         //   //c11.op00_11_con(m1, m3, m2, m6, &t[1], &t[3], &t[2], &t[6]);
-         //   //c00.op00_11_con(m1, m4, m5, m7, t, 1, 4, 5, 7);
-         //   //c01.op01_10_con(m3, m5, t, 3, 5);
-         //   //c10.op01_10_con(m2, m4, t, 2, 4);
-         //   //c11.op00_11_con(m1, m3, m2, m6, t, 1, 3, 2, 6);
-         //   a00.op00_11_con(m1, m4, m5, m7, t, 1, 4, 5, 7);
-         //   a01.op01_10_con(m3, m5, t, 3, 5);
-         //   a10.op01_10_con(m2, m4, t, 2, 4);
-         //   a11.op00_11_con(m1, m3, m2, m6, t, 1, 3, 2, 6);
-         //   //a00.op00_11(*m1, *m4, *m5, *m7);
-         //   //a01.op01_10(*m3, *m5);
-         //   //a10.op01_10(*m2, *m4);
-         //   //a11.op00_11(*m1, *m3, *m2, *m6);
-         //}
-         //else
-         //{
-            //t[1] = std::thread(&Matrix<T>::op00_11, &a00, m1, m4, m5, m7);
-            //t[2] = std::thread(&Matrix<T>::op01_10, &a01, m3, m5);
-            //t[3] = std::thread(&Matrix<T>::op01_10, &a10, m2, m4);
-            //t[4] = std::thread(&Matrix<T>::op00_11, &a11, m1, m3, m2, m6);
-            //t[1].join();
-            //t[4].join();
-            //t[5].join();
-            //t[7].join();
-            //t[12] = std::thread(&Matrix<T>::op00_11, &c00, m1, m4, m5, m7);
-            //t[3].join();
-            //t[13] = std::thread(&Matrix<T>::op01_10, &c01, m3, m5);
-            //t[2].join();
-            //t[14] = std::thread(&Matrix<T>::op01_10, &c10, m2, m4);
-            //t[6].join();
-            //t[15] = std::thread(&Matrix<T>::op00_11, &c11, m1, m3, m2, m6);
-            //t[12] = std::thread(&Matrix<T>::op00_11_con, &c00, m1, m4, m5, m7, &t[1], &t[4], &t[5], &t[7]);
-            //t[13] = std::thread(&Matrix<T>::op01_10_con, &c01, m3, m5, &t[3], &t[5]);
-            //t[14] = std::thread(&Matrix<T>::op01_10_con, &c10, m2, m4, &t[2], &t[4]);
-            //t[15] = std::thread(&Matrix<T>::op00_11_con, &c11, m1, m3, m2, m6, &t[1], &t[3], &t[2], &t[6]);
-            //t[12] = std::thread(&Matrix<T>::op00_11_con, &c00, std::ref(m1), std::ref(m4), std::ref(m5), std::ref(m7), t, 1, 4, 5, 7);
-            //t[13] = std::thread(&Matrix<T>::op01_10_con, &c01, std::ref(m3), std::ref(m5), t, 3, 5);
-            //t[14] = std::thread(&Matrix<T>::op01_10_con, &c10, std::ref(m2), std::ref(m4), t, 2, 4);
-            //t[15] = std::thread(&Matrix<T>::op00_11_con, &c11, std::ref(m1), std::ref(m3), std::ref(m2), std::ref(m6), t, 1, 3, 2, 6);
-            t[12] = std::thread(&Matrix<T>::op00_11_con, &a00, std::ref(m1), std::ref(m4), std::ref(m5), std::ref(m7), t, 1, 4, 5, 7);
-            t[13] = std::thread(&Matrix<T>::op01_10_con, &a01, std::ref(m3), std::ref(m5), t, 3, 5);
-            t[14] = std::thread(&Matrix<T>::op01_10_con, &a10, std::ref(m2), std::ref(m4), t, 2, 4);
-            t[15] = std::thread(&Matrix<T>::op00_11_con, &a11, std::ref(m1), std::ref(m3), std::ref(m2), std::ref(m6), t, 1, 3, 2, 6);
-            //t[1] = std::thread(&Matrix<T>::op00_11, &a00, *m1, *m4, *m5, *m7);
-            //t[2] = std::thread(&Matrix<T>::op01_10, &a01, *m3, *m5);
-            //t[3] = std::thread(&Matrix<T>::op01_10, &a10, *m2, *m4);
-            //t[4] = std::thread(&Matrix<T>::op00_11, &a11, *m1, *m3, *m2, *m6);
-            t[12].join();
-            t[13].join();
-            t[14].join();
-            t[15].join();
-         //}
-         //delete m1;
-         //delete m2;
-         //delete m3;
-         //delete m4;
-         //delete m5;
-         //delete m6;
-         //delete m7;
-         /**/
-         //a00 = m1;
-         //a00 += m4;
-         //a00 -= m5;
-         //a00 += m7;
-         //a01 = m3;
-         //a01 += m5;
-         //a10 = m2;
-         //a10 += m4;
-         //a11 = m1;
-         //a11 += m3;
-         //a11 -= m2;
-         //a11 += m6;
+         t[12] = std::thread(&Matrix<T>::op00_11_con, &a00, std::ref(m1), std::ref(m4), std::ref(m5), std::ref(m7), t, 1, 4, 5, 7);
+         t[13] = std::thread(&Matrix<T>::op01_10_con, &a01, std::ref(m3), std::ref(m5), t, 3, 5);
+         t[14] = std::thread(&Matrix<T>::op01_10_con, &a10, std::ref(m2), std::ref(m4), t, 2, 4);
+         t[15] = std::thread(&Matrix<T>::op00_11_con, &a11, std::ref(m1), std::ref(m3), std::ref(m2), std::ref(m6), t, 1, 3, 2, 6);
+         t[12].join();
+         t[13].join();
+         t[14].join();
+         t[15].join();
          // The above will re-write matrixA (calling object)
          // Reassemble the quadrants into a single whole
-         //if (result != NULL)
-         //{
-         //   *result = Matrix(a00, a01, a10, a11);
-         //}
       }
       else
       {
-         // Assume a matrix of size 1
-         //if (result != NULL)
-         //{
-         //   *result[0][0] = mRows[0][0] * matrixB[0][0];
-         //}
          mRows[0][0] = mRows[0][0] * matrixB[0][0];
       }
-      //std::lock_guard<std::mutex> lk(mMutex);
       finished = true;
-      //mCV.notify_all();
    }
    
    void runParallel_Fast(Matrix<T>* a0, Matrix<T>* a1, bool addA, Matrix<T>* b0, Matrix<T>* b1, bool addB, std::string computer, std::string port, int id)
@@ -1323,47 +984,16 @@ public:
     * The input matrices must be equal in size and square, 
     *    and the size must be n x n, where n is a power of 2
     *************************************************************************/
-   //void runParallel(Matrix<T> matrixB, Matrix<T>& result, std::string computer, std::string port, int id)
-   //void runParallel(Matrix<T> matrixB, Matrix<T>* result, std::string computer, std::string port, int id)
-   //void runParallel(Matrix<T>* a0, Matrix<T>* a1, bool addA, Matrix<T>* b0, Matrix<T>* b1, bool addB, std::string computer, std::string port, int id)
    void runParallel(Matrix<T>& matrixB, std::string computer, std::string port, int id, bool wrapped = false)
    {
       // Take over the lock for this matrix.....
-      //std::lock_guard<std::mutex> lk(mMutex);
       std::mutex* pMutex = &mMutex;
       if (wrapped)
       {
-         //std::cerr << "TF: using wrapper lock!\n";
          pMutex = &mWMutex;
       }
-      else
-      {
-         //std::cerr << "TF: Grabbing object lock!\n";
-      }
-      //std::lock_guard<std::mutex> lk(mMutex);
       std::lock_guard<std::mutex> lk(*pMutex);
       started = true;
-      
-      //// Allocate the memory and fill it with the specified data...
-      //if (a1 != NULL)
-      //{
-      //   this->allocMath(*a0, *a1, addA);
-      //}
-      //else
-      //{
-      //   //*this = *a0;
-      //   this->allocCopy(*a0);
-      //}
-      //Matrix<T> matrixB(mSize, false); // Declare but don't allocate
-      //if (b1 != NULL)
-      //{
-      //   matrixB.allocMath(*b0, *b1, addB); // Allocate and compute matrixB
-      //}
-      //else
-      //{
-      //   //matrixB = *b0;
-      //   matrixB.allocCopy(*b0);
-      //}
       
       // Set a limit on how many concurrent threads can run....
       std::lock_guard<std::mutex> lock(threadLimiter[id % maxThreads]);
@@ -1386,14 +1016,16 @@ public:
                failed = true;
             }
             // Send matrix A
-            if (failed || !this->writeNet(net))
+            //if (failed || !this->writeNet(net))
+            if (failed || !this->writeNet(net, true))
             {
                std::cerr << Red << "Server closed connection: " << computer << "\n";
                std::cerr << "ERROR (" << computer << "): " << net.strError << RCol << "\n";
                failed = true;
             }
             // Send matrix B
-            if (failed || !matrixB.writeNet(net))
+            //if (failed || !matrixB.writeNet(net))
+            if (failed || !matrixB.writeNet(net, true))
             {
                std::cerr << Red << "Server closed connection: " << computer << "\n";
                std::cerr << "ERROR (" << computer << "): " << net.strError << RCol << "\n";
@@ -1402,8 +1034,6 @@ public:
             // Erase the allocated memory of matrixB. It's not needed anymore.
             matrixB.erase();
             // Receive Result
-            //if (failed || !resultreadNet(net))
-            //if (failed || (result == NULL ? !this->readNet(net) : !result->readNet(net)))
             if (failed || !this->readNet(net))
             {
                std::cerr << Red << "Server closed connection: " << computer << "\n";
@@ -1427,16 +1057,9 @@ public:
       else
       {
          // Assume a matrix of size 1
-         //result[0][0] = mRows[0][0] * matrixB[0][0];
-         //if (result != NULL)
-         //{
-         //   *result[0][0] = mRows[0][0] * matrixB[0][0];
-         //}
          mRows[0][0] = mRows[0][0] * matrixB[0][0];
       }
-      //std::lock_guard<std::mutex> lk(mMutex);
       finished = true;
-      //mCV.notify_all();
       std::cerr << Gre << "EXITING THREAD " << id << " FOR SYSTEM '" << computer << "'!!!" << RCol  << "\n";
    }
    
@@ -1445,18 +1068,8 @@ public:
     * need to pass in a*, a*, addA, b*, b*, addB
     * 
     *************************************************************************/
-   //void mult_Fast_Slave(Matrix<T>* a0, Matrix<T>* a1, bool addA, Matrix<T>* b0, Matrix<T>* b1, bool addB, std::unique_lock<std::mutex>&& ctlMut)
-   //void mult_Fast_Slave(Matrix<T>* a0, Matrix<T>* a1, bool addA, Matrix<T>* b0, Matrix<T>* b1, bool addB, int& startBlock, std::mutex& mut)
    void mult_Fast_Slave(Matrix<T>* a0, Matrix<T>* a1, bool addA, Matrix<T>* b0, Matrix<T>* b1, bool addB)
    {
-      // Take over the lock for this matrix.....
-      //std::lock_guard<std::mutex> lk(mMutex);
-      //ctlMut.unlock();
-      //{
-      //std::lock_guard<std::mutex> stLk(mut);
-      //--startBlock;
-      //}
-      
       started = true;
       // Allocate the memory and fill it with the specified data...
       if (a1 != NULL)
@@ -1465,7 +1078,6 @@ public:
       }
       else
       {
-         //*this = *a0;
          this->allocCopy(*a0);
       }
       Matrix<T> matrixB(mSize, false); // Declare but don't allocate
@@ -1475,10 +1087,8 @@ public:
       }
       else
       {
-         //matrixB = *b0;
          matrixB.allocCopy(*b0);
       }
-      //mult_ThreadFarming(matrixB, NULL, computers, numComputers, port, true);
       mult_FarmSlave(matrixB, true);
    }
    /**************************************************************************
@@ -1486,44 +1096,15 @@ public:
     * The input matrices must be equal in size and square, 
     *    and the size must be n x n, where n is a power of 2
     *************************************************************************/
-   //void mult_FarmSlave(Matrix<T>& matrixB, Matrix<T>* result)
-   //void mult_FarmSlave(Matrix<T>& matrixB)
    void mult_FarmSlave(Matrix<T>& matrixB, bool wrapped = false)
    {
-      // Take over the lock for this matrix.....
-      //mMutex.try_lock();
-      //if (!mMutex.try_lock() && !wrapped)
-      //{
-      //   std::cerr << Red << "FS: FAILED TO LOCK!!!!!" << RCol << std::endl;
-      //}
-      //std::mutex* pMutex = &mMutex;
-      //if (wrapped)
-      //{
-      //   //std::cerr << "FS: using wrapper lock!\n";
-      //   pMutex = &mWMutex;
-      //}
-      //else
-      //{
-      //   //mMutex.unlock(); // Allow the lock_guard to work.
-      //   //std::cerr << "FS: Grabbing object lock!\n";
-      //}
-      ////std::lock_guard<std::mutex> lk(mMutex);
-      //std::lock_guard<std::mutex> lk(*pMutex);
-      //started = true;
-      /**/
       if (mSize < 512 && mSize > 1 && mSize <= thread_Stop)
       {
-         //std::cerr << "In single catch-all\n";
          // This is, oddly enough, about 1 second faster for 2048x2048...
          Matrix<T> mA(*this);
          multStandard3(mA, matrixB);
-         //multStandard4(matrixB);
-         //std::cerr << "In single catch-all: exit\n";
       }
       else if (mSize > 1)
-      /*/
-      if (mSize > 1)
-      /**/
       {
          std::thread t[16];
          
@@ -1538,15 +1119,6 @@ public:
          Matrix<T> b11(matrixB, 1, 1);
          
          // Temporary Matrices to hold the 7 multiplication results
-         // Initialize to the left side of the multiplication...
-         /**/
-         //Matrix<T> m1(a00, a11, true ); // Create new object, adding 2nd to 1st
-         //Matrix<T> m2(a10, a11, true ); // Create new object, adding 2nd to 1st
-         //Matrix<T> m3(a00            ); // Make a copy...
-         //Matrix<T> m4(a11            ); // Make a copy...
-         //Matrix<T> m5(a00, a01, true ); // Create new object, adding 2nd to 1st
-         //Matrix<T> m6(a10, a00, false); // Create new object, subtracting 2nd from 1st
-         //Matrix<T> m7(a01, a11, false); // Create new object, subtracting 2nd from 1st
          Matrix<T> m1(mSize / 2, false); // Declare matrix, but do not allocate
          Matrix<T> m2(mSize / 2, false); // Declare matrix, but do not allocate
          Matrix<T> m3(mSize / 2, false); // Declare matrix, but do not allocate
@@ -1555,72 +1127,6 @@ public:
          Matrix<T> m6(mSize / 2, false); // Declare matrix, but do not allocate
          Matrix<T> m7(mSize / 2, false); // Declare matrix, but do not allocate
          Matrix<int>* null = NULL;
-         /*/
-         Matrix<T> *m1;
-         Matrix<T> *m2;
-         Matrix<T> *m3;
-         Matrix<T> *m4;
-         Matrix<T> *m5;
-         Matrix<T> *m6;
-         Matrix<T> *m7;
-         Matrix<T> *b1;
-         Matrix<T> *b2;
-         Matrix<T> *b3;
-         Matrix<T> *b4;
-         Matrix<T> *b5;
-         Matrix<T> *b6;
-         Matrix<T> *b7;
-         Matrix<int>* null = NULL;
-         
-         if (mSize < 4096)
-         {
-            m1 = new Matrix<T>(a00, a11, true ); // Create new object, adding 2nd to 1st
-            m2 = new Matrix<T>(a10, a11, true ); // Create new object, adding 2nd to 1st
-            m3 = new Matrix<T>(a00            ); // Make a copy...
-            m4 = new Matrix<T>(a11            ); // Make a copy...
-            m5 = new Matrix<T>(a00, a01, true ); // Create new object, adding 2nd to 1st
-            m6 = new Matrix<T>(a10, a00, false); // Create new object, subtracting 2nd from 1st
-            m7 = new Matrix<T>(a01, a11, false); // Create new object, subtracting 2nd from 1st
-            b1 = new Matrix<T>(b00, b11, true ); // Create new object, adding 2nd to 1st
-            b2 = new Matrix<T>(b00            ); // Make a copy... -----------------------------Should be able to get away with a pointer copy... - not with the memory deallocation that follows...
-            b3 = new Matrix<T>(b01, b11, false); // Create new object, subtracting 2nd from 1st
-            b4 = new Matrix<T>(b10, b00, false); // Create new object, adding 2nd to 1st
-            b5 = new Matrix<T>(b11            ); // Make a copy... -----------------------------Should be able to get away with a pointer copy... - not with the memory deallocation that follows...
-            b6 = new Matrix<T>(b00, b01, true ); // Create new object, subtracting 2nd from 1st
-            b7 = new Matrix<T>(b10, b11, true ); // Create new object, adding 2nd to 1st
-         }
-         else
-         {
-            t[1]  = std::thread(&Matrix<T>::addFill, &a00, std::ref(a11), std::ref(m1), true );
-            t[2]  = std::thread(&Matrix<T>::addFill, &a10, std::ref(a11), std::ref(m2), true );
-            t[3]  = std::thread(&Matrix<T>::copyTo , &a00               , std::ref(m3)       );
-            t[4]  = std::thread(&Matrix<T>::copyTo , &a11               , std::ref(m4)       );
-            t[5]  = std::thread(&Matrix<T>::addFill, &a00, std::ref(a01), std::ref(m5), true );
-            t[6]  = std::thread(&Matrix<T>::addFill, &a10, std::ref(a00), std::ref(m6), false);
-            t[7]  = std::thread(&Matrix<T>::addFill, &a01, std::ref(a11), std::ref(m7), false);
-            
-            t[8]  = std::thread(&Matrix<T>::addFill, &b00, std::ref(b11), std::ref(b1), true );
-            t[9]  = std::thread(&Matrix<T>::copyTo , &b00               , std::ref(b2)       );
-            t[10] = std::thread(&Matrix<T>::addFill, &b01, std::ref(b11), std::ref(b3), false);
-            t[11] = std::thread(&Matrix<T>::addFill, &b10, std::ref(b00), std::ref(b4), false);
-            t[12] = std::thread(&Matrix<T>::copyTo , &b11               , std::ref(b5)       );
-            t[13] = std::thread(&Matrix<T>::addFill, &b00, std::ref(b01), std::ref(b6), true );
-            t[14] = std::thread(&Matrix<T>::addFill, &b10, std::ref(b11), std::ref(b7), true );
-            
-            for (int i = 1; i < 15; ++i)
-            {
-               t[i].join();
-            }
-         }
-         
-         // Clear out allocated memory....
-         b00.erase();
-         b01.erase();
-         b10.erase();
-         b11.erase();
-         // We don't need matrixB data anymore. Erase it.
-         matrixB.erase();
-         /**/
          
          // Get the 7 multiplication results
          // m1 = (a00 + a11) * (b00 + b11);
@@ -1631,57 +1137,9 @@ public:
          // m6 = (a10 - a00) * (b00 + b01);
          // m7 = (a01 - a11) * (b10 + b11);
          
-         //std::mutex mut1;
-         //std::mutex mut2;
-         //std::mutex mut3;
-         //std::mutex mut4;
-         //std::mutex mut5;
-         //std::mutex mut6;
-         //std::mutex mut7;
-         //std::unique_lock<std::mutex> lk1(mut1);
-         //std::unique_lock<std::mutex> lk2(mut2);
-         //std::unique_lock<std::mutex> lk3(mut3);
-         //std::unique_lock<std::mutex> lk4(mut4);
-         //std::unique_lock<std::mutex> lk5(mut5);
-         //std::unique_lock<std::mutex> lk6(mut6);
-         //std::unique_lock<std::mutex> lk7(mut7);
-         //std::mutex mut;
-         //int startBlock = 7;
-         
          // Split for the thread number optimization
          if (mSize > thread_Start)
          {
-         //std::cerr << "In thread_start\n";
-            // Matrix is too large. Slow down to save memory...
-            /**/
-            //m1.mult_wrapper((b00 + b11), null);
-            //m2.mult_wrapper((b00)      , null);
-            //m3.mult_wrapper((b01 - b11), null);
-            //m4.mult_wrapper((b10 - b00), null);
-            //m5.mult_wrapper((b11)      , null);
-            //m6.mult_wrapper((b00 + b01), null);
-            //m7.mult_wrapper((b10 + b11), null);
-            //m1.allocMath(a00, a11, true ); // Create new object, adding 2nd to 1st
-            //m2.allocMath(a10, a11, true ); // Create new object, adding 2nd to 1st
-            //m3.allocCopy(a00            ); // Make a copy...
-            //m4.allocCopy(a11            ); // Make a copy...
-            //m5.allocMath(a00, a01, true ); // Create new object, adding 2nd to 1st
-            //m6.allocMath(a10, a00, false); // Create new object, subtracting 2nd from 1st
-            //m7.allocMath(a01, a11, false); // Create new object, subtracting 2nd from 1st
-            //m1.mult_wrapper((b00 + b11));
-            //m2.mult_wrapper((b00)      );
-            //m3.mult_wrapper((b01 - b11));
-            //m4.mult_wrapper((b10 - b00));
-            //m5.mult_wrapper((b11)      );
-            //m6.mult_wrapper((b00 + b01));
-            //m7.mult_wrapper((b10 + b11));
-            //m1.mult_Fast_Slave(&a00, &a11 , true , &b00, &b11 , true , startBlock, mut);
-            //m2.mult_Fast_Slave(&a10, &a11 , true , &b00,  null, false, startBlock, mut);
-            //m3.mult_Fast_Slave(&a00,  null, false, &b01, &b11 , false, startBlock, mut);
-            //m4.mult_Fast_Slave(&a11,  null, false, &b10, &b00 , false, startBlock, mut);
-            //m5.mult_Fast_Slave(&a00, &a01 , true , &b11,  null, false, startBlock, mut);
-            //m6.mult_Fast_Slave(&a10, &a00 , false, &b00, &b01 , true , startBlock, mut);
-            //m7.mult_Fast_Slave(&a01, &a11 , false, &b10, &b11 , true , startBlock, mut);
             m1.mult_Fast_Slave(&a00, &a11 , true , &b00, &b11 , true );
             m2.mult_Fast_Slave(&a10, &a11 , true , &b00,  null, false);
             m3.mult_Fast_Slave(&a00,  null, false, &b01, &b11 , false);
@@ -1689,72 +1147,9 @@ public:
             m5.mult_Fast_Slave(&a00, &a01 , true , &b11,  null, false);
             m6.mult_Fast_Slave(&a10, &a00 , false, &b00, &b01 , true );
             m7.mult_Fast_Slave(&a01, &a11 , false, &b10, &b11 , true );
-            //startBlock = 0;
-            //lk1.unlock();
-            //lk2.unlock();
-            //lk3.unlock();
-            //lk4.unlock();
-            //lk5.unlock();
-            //lk6.unlock();
-            //lk7.unlock();
-            /*/
-            //m1.mult_FarmSlave(b1, null);
-            //m2.mult_FarmSlave(b2, null);
-            //m3.mult_FarmSlave(b3, null);
-            //m4.mult_FarmSlave(b4, null);
-            //m5.mult_FarmSlave(b5, null);
-            //m6.mult_FarmSlave(b6, null);
-            //m7.mult_FarmSlave(b7, null);
-            m1->mult_FarmSlave(*b1, null);
-            m2->mult_FarmSlave(*b2, null);
-            m3->mult_FarmSlave(*b3, null);
-            m4->mult_FarmSlave(*b4, null);
-            m5->mult_FarmSlave(*b5, null);
-            m6->mult_FarmSlave(*b6, null);
-            m7->mult_FarmSlave(*b7, null);
-            /**/
          }
          else if (mSize > thread_Stop)
          {
-         //std::cerr << "In thread_stop\n";
-            /**/
-            //t[1] = std::thread(&Matrix<T>::mult_FarmSlave, &m1, (b00 + b11), null);
-            //t[2] = std::thread(&Matrix<T>::mult_FarmSlave, &m2, (b00)      , null);
-            //t[3] = std::thread(&Matrix<T>::mult_FarmSlave, &m3, (b01 - b11), null);
-            //t[4] = std::thread(&Matrix<T>::mult_FarmSlave, &m4, (b10 - b00), null);
-            //t[5] = std::thread(&Matrix<T>::mult_FarmSlave, &m5, (b11)      , null);
-            //t[6] = std::thread(&Matrix<T>::mult_FarmSlave, &m6, (b00 + b01), null);
-            //t[7] = std::thread(&Matrix<T>::mult_FarmSlave, &m7, (b10 + b11), null);
-            /*/
-            m1.allocMath(a00, a11, true ); // Create new object, adding 2nd to 1st
-            m2.allocMath(a10, a11, true ); // Create new object, adding 2nd to 1st
-            m3.allocCopy(a00            ); // Make a copy...
-            m4.allocCopy(a11            ); // Make a copy...
-            m5.allocMath(a00, a01, true ); // Create new object, adding 2nd to 1st
-            m6.allocMath(a10, a00, false); // Create new object, subtracting 2nd from 1st
-            m7.allocMath(a01, a11, false); // Create new object, subtracting 2nd from 1st
-            t[1] = std::thread(&Matrix<T>::mult_wrapper, &m1, (b00 + b11));
-            t[2] = std::thread(&Matrix<T>::mult_wrapper, &m2, (b00)      );
-            t[3] = std::thread(&Matrix<T>::mult_wrapper, &m3, (b01 - b11));
-            t[4] = std::thread(&Matrix<T>::mult_wrapper, &m4, (b10 - b00));
-            t[5] = std::thread(&Matrix<T>::mult_wrapper, &m5, (b11)      );
-            t[6] = std::thread(&Matrix<T>::mult_wrapper, &m6, (b00 + b01));
-            t[7] = std::thread(&Matrix<T>::mult_wrapper, &m7, (b10 + b11));
-            /*/
-            //t[1] = std::thread(&Matrix<T>::mult_Fast_Slave, &m1, &a00, &a11 , true , &b00, &b11 , true , std::move(lk1));
-            //t[2] = std::thread(&Matrix<T>::mult_Fast_Slave, &m2, &a10, &a11 , true , &b00,  null, false, std::move(lk2));
-            //t[3] = std::thread(&Matrix<T>::mult_Fast_Slave, &m3, &a00,  null, false, &b01, &b11 , false, std::move(lk3));
-            //t[4] = std::thread(&Matrix<T>::mult_Fast_Slave, &m4, &a11,  null, false, &b10, &b00 , false, std::move(lk4));
-            //t[5] = std::thread(&Matrix<T>::mult_Fast_Slave, &m5, &a00, &a01 , true , &b11,  null, false, std::move(lk5));
-            //t[6] = std::thread(&Matrix<T>::mult_Fast_Slave, &m6, &a10, &a00 , false, &b00, &b01 , true , std::move(lk6));
-            //t[7] = std::thread(&Matrix<T>::mult_Fast_Slave, &m7, &a01, &a11 , false, &b10, &b11 , true , std::move(lk7));
-            //t[1] = std::thread(&Matrix<T>::mult_Fast_Slave, &m1, &a00, &a11 , true , &b00, &b11 , true , std::ref(startBlock), std::ref(mut));
-            //t[2] = std::thread(&Matrix<T>::mult_Fast_Slave, &m2, &a10, &a11 , true , &b00,  null, false, std::ref(startBlock), std::ref(mut));
-            //t[3] = std::thread(&Matrix<T>::mult_Fast_Slave, &m3, &a00,  null, false, &b01, &b11 , false, std::ref(startBlock), std::ref(mut));
-            //t[4] = std::thread(&Matrix<T>::mult_Fast_Slave, &m4, &a11,  null, false, &b10, &b00 , false, std::ref(startBlock), std::ref(mut));
-            //t[5] = std::thread(&Matrix<T>::mult_Fast_Slave, &m5, &a00, &a01 , true , &b11,  null, false, std::ref(startBlock), std::ref(mut));
-            //t[6] = std::thread(&Matrix<T>::mult_Fast_Slave, &m6, &a10, &a00 , false, &b00, &b01 , true , std::ref(startBlock), std::ref(mut));
-            //t[7] = std::thread(&Matrix<T>::mult_Fast_Slave, &m7, &a01, &a11 , false, &b10, &b11 , true , std::ref(startBlock), std::ref(mut));
             t[1] = std::thread(&Matrix<T>::mult_Fast_Slave, &m1, &a00, &a11 , true , &b00, &b11 , true );
             t[2] = std::thread(&Matrix<T>::mult_Fast_Slave, &m2, &a10, &a11 , true , &b00,  null, false);
             t[3] = std::thread(&Matrix<T>::mult_Fast_Slave, &m3, &a00,  null, false, &b01, &b11 , false);
@@ -1769,35 +1164,9 @@ public:
             t[5].join();
             t[6].join();
             t[7].join();
-            /**/
-            /*/
-            //t[1] = std::thread(&Matrix<T>::mult_FarmSlave, &m1, b1, null);
-            //t[2] = std::thread(&Matrix<T>::mult_FarmSlave, &m2, b2, null);
-            //t[3] = std::thread(&Matrix<T>::mult_FarmSlave, &m3, b3, null);
-            //t[4] = std::thread(&Matrix<T>::mult_FarmSlave, &m4, b4, null);
-            //t[5] = std::thread(&Matrix<T>::mult_FarmSlave, &m5, b5, null);
-            //t[6] = std::thread(&Matrix<T>::mult_FarmSlave, &m6, b6, null);
-            //t[7] = std::thread(&Matrix<T>::mult_FarmSlave, &m7, b7, null);
-            t[1] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m1), *b1, null);
-            t[2] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m2), *b2, null);
-            t[3] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m3), *b3, null);
-            t[4] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m4), *b4, null);
-            t[5] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m5), *b5, null);
-            t[6] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m6), *b6, null);
-            t[7] = std::thread(&Matrix<T>::mult_FarmSlave, &(*m7), *b7, null);
-            /**/
          }
          else if (mSize > 512)
          {
-         //std::cerr << "In >512\n";
-         //   // At the moment, this appears to slow down execution
-         //   m1.mult_wrapper (b00 + b11, null);
-         //   m2.mult_wrapper (b00      , null);
-         //   m3.mult_wrapper (b01 - b11, null);
-         //   m4.mult_wrapper (b10 - b00, null);
-         //   m5.mult_wrapper (b11      , null);
-         //   m6.mult_wrapper (b00 + b01, null);
-         //   m7.mult_wrapper (b10 + b11, null);
             m1.mult_Fast_Slave(&a00, &a11 , true , &b00, &b11 , true );
             m2.mult_Fast_Slave(&a10, &a11 , true , &b00,  null, false);
             m3.mult_Fast_Slave(&a00,  null, false, &b01, &b11 , false);
@@ -1808,39 +1177,8 @@ public:
          }
          else
          {
-            //std::cerr << "In bad branch!\n";
+            // As odd as it seems, it is faster to do this at 512x512 than doing it as a single operation
             /**/
-            // Make this run parallel... this is just more time consuming the way it is
-            // Below would probably be faster:
-            //Matrix<T> m(mSize);
-            //this->multStandard(matrixB, m);
-            //this->erase();
-            //this->allocCopy(m);
-            //finished = true;
-            //return;
-            //
-            /**/
-            //m1.reallocate();
-            //m2.reallocate();
-            //m3.reallocate();
-            //m4.reallocate();
-            //m5.reallocate();
-            //m6.reallocate();
-            //m7.reallocate();
-            //(a00 + a11).multStandard (b00 + b11, m1);
-            //(a10 + a11).multStandard (b00      , m2);
-            //(a00)      .multStandard (b01 - b11, m3);
-            //(a11)      .multStandard (b10 - b00, m4);
-            //(a00 + a01).multStandard (b11      , m5);
-            //(a10 - a00).multStandard (b00 + b01, m6);
-            //(a01 - a11).multStandard (b10 + b11, m7);
-            //m1.multStandard2(&a00, &a11 , true , &b00, &b11 , true , startBlock, mut);
-            //m2.multStandard2(&a10, &a11 , true , &b00,  null, false, startBlock, mut);
-            //m3.multStandard2(&a00,  null, false, &b01, &b11 , false, startBlock, mut);
-            //m4.multStandard2(&a11,  null, false, &b10, &b00 , false, startBlock, mut);
-            //m5.multStandard2(&a00, &a01 , true , &b11,  null, false, startBlock, mut);
-            //m6.multStandard2(&a10, &a00 , false, &b00, &b01 , true , startBlock, mut);
-            //m7.multStandard2(&a01, &a11 , false, &b10, &b11 , true , startBlock, mut);
             m1.multStandard2(&a00, &a11 , true , &b00, &b11 , true );
             m2.multStandard2(&a10, &a11 , true , &b00,  null, false);
             m3.multStandard2(&a00,  null, false, &b01, &b11 , false);
@@ -1848,36 +1186,7 @@ public:
             m5.multStandard2(&a00, &a01 , true , &b11,  null, false);
             m6.multStandard2(&a10, &a00 , false, &b00, &b01 , true );
             m7.multStandard2(&a01, &a11 , false, &b10, &b11 , true );
-            //startBlock = 0;
             /*/
-            //t[1] = std::thread(&Matrix<T>::multStandard2, &m1, &a00, &a11 , true , &b00, &b11 , true , std::move(lk1));
-            //t[2] = std::thread(&Matrix<T>::multStandard2, &m2, &a10, &a11 , true , &b00,  null, false, std::move(lk2));
-            //t[3] = std::thread(&Matrix<T>::multStandard2, &m3, &a00,  null, false, &b01, &b11 , false, std::move(lk3));
-            //t[4] = std::thread(&Matrix<T>::multStandard2, &m4, &a11,  null, false, &b10, &b00 , false, std::move(lk4));
-            //t[5] = std::thread(&Matrix<T>::multStandard2, &m5, &a00, &a01 , true , &b11,  null, false, std::move(lk5));
-            //t[6] = std::thread(&Matrix<T>::multStandard2, &m6, &a10, &a00 , false, &b00, &b01 , true , std::move(lk6));
-            //t[7] = std::thread(&Matrix<T>::multStandard2, &m7, &a01, &a11 , false, &b10, &b11 , true , std::move(lk7));
-            //std::unique_lock<std::mutex> lk1(m1.mMutex);
-            //std::unique_lock<std::mutex> lk2(m2.mMutex);
-            //std::unique_lock<std::mutex> lk3(m3.mMutex);
-            //std::unique_lock<std::mutex> lk4(m4.mMutex);
-            //std::unique_lock<std::mutex> lk5(m5.mMutex);
-            //std::unique_lock<std::mutex> lk6(m6.mMutex);
-            //std::unique_lock<std::mutex> lk7(m7.mMutex);
-            //lk1.release();
-            //lk2.release();
-            //lk3.release();
-            //lk4.release();
-            //lk5.release();
-            //lk6.release();
-            //lk7.release();
-            //t[1] = std::thread(&Matrix<T>::multStandard2, &m1, &a00, &a11 , true , &b00, &b11 , true , std::ref(startBlock), std::ref(mut));
-            //t[2] = std::thread(&Matrix<T>::multStandard2, &m2, &a10, &a11 , true , &b00,  null, false, std::ref(startBlock), std::ref(mut));
-            //t[3] = std::thread(&Matrix<T>::multStandard2, &m3, &a00,  null, false, &b01, &b11 , false, std::ref(startBlock), std::ref(mut));
-            //t[4] = std::thread(&Matrix<T>::multStandard2, &m4, &a11,  null, false, &b10, &b00 , false, std::ref(startBlock), std::ref(mut));
-            //t[5] = std::thread(&Matrix<T>::multStandard2, &m5, &a00, &a01 , true , &b11,  null, false, std::ref(startBlock), std::ref(mut));
-            //t[6] = std::thread(&Matrix<T>::multStandard2, &m6, &a10, &a00 , false, &b00, &b01 , true , std::ref(startBlock), std::ref(mut));
-            //t[7] = std::thread(&Matrix<T>::multStandard2, &m7, &a01, &a11 , false, &b10, &b11 , true , std::ref(startBlock), std::ref(mut));
             t[1] = std::thread(&Matrix<T>::multStandard2, &m1, &a00, &a11 , true , &b00, &b11 , true );
             t[2] = std::thread(&Matrix<T>::multStandard2, &m2, &a10, &a11 , true , &b00,  null, false);
             t[3] = std::thread(&Matrix<T>::multStandard2, &m3, &a00,  null, false, &b01, &b11 , false);
@@ -1885,225 +1194,35 @@ public:
             t[5] = std::thread(&Matrix<T>::multStandard2, &m5, &a00, &a01 , true , &b11,  null, false);
             t[6] = std::thread(&Matrix<T>::multStandard2, &m6, &a10, &a00 , false, &b00, &b01 , true );
             t[7] = std::thread(&Matrix<T>::multStandard2, &m7, &a01, &a11 , false, &b10, &b11 , true );
-            //t[1].join();
-            //t[2].join();
-            //t[3].join();
-            //t[4].join();
-            //t[5].join();
-            //t[6].join();
-            //t[7].join();
-            /**/
-            /*/
-            //(a00 + a11).multStandard (b1, m1);
-            //(a10 + a11).multStandard (b2, m2);
-            //(a00)      .multStandard (b3, m3);
-            //(a11)      .multStandard (b4, m4);
-            //(a00 + a01).multStandard (b5, m5);
-            //(a10 - a00).multStandard (b6, m6);
-            //(a01 - a11).multStandard (b7, m7);
-            (a00 + a11).multStandard (*b1, *m1);
-            (a10 + a11).multStandard (*b2, *m2);
-            (a00)      .multStandard (*b3, *m3);
-            (a11)      .multStandard (*b4, *m4);
-            (a00 + a01).multStandard (*b5, *m5);
-            (a10 - a00).multStandard (*b6, *m6);
-            (a01 - a11).multStandard (*b7, *m7);
+            t[1].join();
+            t[2].join();
+            t[3].join();
+            t[4].join();
+            t[5].join();
+            t[6].join();
+            t[7].join();
             /**/
          }
-         //std::this_thread::yield();
-         //sleep(4);
-         //if (lk1.owns_lock()) lk1.unlock();
-         //if (lk2.owns_lock()) lk2.unlock();
-         //if (lk3.owns_lock()) lk3.unlock();
-         //if (lk4.owns_lock()) lk4.unlock();
-         //if (lk5.owns_lock()) lk5.unlock();
-         //if (lk6.owns_lock()) lk6.unlock();
-         //if (lk7.owns_lock()) lk7.unlock();
-         //std::unique_lock<std::mutex> lock1(mut1);
-         //std::unique_lock<std::mutex> lock2(mut2);
-         //std::unique_lock<std::mutex> lock3(mut3);
-         //std::unique_lock<std::mutex> lock4(mut4);
-         //std::unique_lock<std::mutex> lock5(mut5);
-         //std::unique_lock<std::mutex> lock6(mut6);
-         //std::unique_lock<std::mutex> lock7(mut7);
          
-         
-         //while (startBlock > 0) // Bad busy waiting - would be good to have something better
-         //{
-         //   std::unique_lock<std::mutex> lk(mut); // To cause a pause of some sort...
-         //   //std::cerr << Red << "Waiting at: " << startBlock << RCol;// << std::endl;
-         //}
-         
-         
-         
-         /**/
-         // Clear out allocated memory....
-         //b00.erase();
-         //b01.erase();
-         //b10.erase();
-         //b11.erase();
-         //// We don't need matrixB data anymore. Erase it.
-         //matrixB.erase();
-         /*/
-         //b1.erase();
-         //b2.erase();
-         //b3.erase();
-         //b4.erase();
-         //b5.erase();
-         //b6.erase();
-         //b7.erase();
-         //b1->erase();
-         //b2->erase();
-         //b3->erase();
-         //b4->erase();
-         //b5->erase();
-         //b6->erase();
-         //b7->erase();
-         delete b1;
-         delete b2;
-         delete b3;
-         delete b4;
-         delete b5;
-         delete b6;
-         delete b7;
-         /**/
-         
-         //if (mSize <= thread_Start && mSize > thread_Stop)
-         //if (mSize <= thread_Start)
-         //{
-         //   t[1].join();
-         //   t[2].join();
-         //   t[3].join();
-         //   t[4].join();
-         //   t[5].join();
-         //   t[6].join();
-         //   t[7].join();
-         //}
          // Use the 7 multiplication results to get the results for each quadrant
          // Save on memory usage by reusing one set of quadrants
          //a00 = m1 + m4 - m5 + m7;
          //a01 = m3 + m5;
          //a10 = m2 + m4;
          //a11 = m1 + m3 - m2 + m6;
-         //*/
-         //if (mSize <= thread_Stop)
-         //{
-         //   a00.op00_11(m1, m4, m5, m7);
-         //   a01.op01_10(m3, m5);
-         //   a10.op01_10(m2, m4);
-         //   a11.op00_11(m1, m3, m2, m6);
-         //}
-         //else
-         //{
-         //sleep(1);
-         //std::cerr << Yel << "Entering busy loops..." << RCol << "\n";
-         //while (!m1.started && !m1.finished); std::cerr << Red << "Exiting busy loops 1..." << RCol << "\n";
-         //while (!m2.started && !m2.finished); std::cerr << Red << "Exiting busy loops 2..." << RCol << "\n";
-         //while (!m3.started && !m3.finished); std::cerr << Red << "Exiting busy loops 3..." << RCol << "\n";
-         //while (!m4.started && !m4.finished); std::cerr << Red << "Exiting busy loops 4..." << RCol << "\n";
-         //while (!m5.started && !m5.finished); std::cerr << Red << "Exiting busy loops 5..." << RCol << "\n";
-         //while (!m6.started && !m6.finished); std::cerr << Red << "Exiting busy loops 6..." << RCol << "\n";
-         //while (!m7.started && !m7.finished); std::cerr << Red << "Exiting busy loops 7..." << RCol << "\n";
-         //if (mSize > thread_Stop && mSize <= thread_Start)
-         ////if ((mSize > thread_Stop && mSize <= thread_Start) || mSize <= 512)
-         //{
-         //std::cerr << "In join math\n";
-         //t[12] = std::thread(&Matrix<T>::op00_11_con, &a00, std::ref(m1), std::ref(m4), std::ref(m5), std::ref(m7), t, 1, 4, 5, 7);
-         //t[13] = std::thread(&Matrix<T>::op01_10_con, &a01, std::ref(m3), std::ref(m5), t, 3, 5);
-         //t[14] = std::thread(&Matrix<T>::op01_10_con, &a10, std::ref(m2), std::ref(m4), t, 2, 4);
-         //t[15] = std::thread(&Matrix<T>::op00_11_con, &a11, std::ref(m1), std::ref(m3), std::ref(m2), std::ref(m6), t, 1, 3, 2, 6);
-         //t[12].join();
-         //t[13].join();
-         //t[14].join();
-         //t[15].join();
-         //}
-         //else
-         //{
-         //std::cerr << "In plain math\n";
-            a00.op00_11(m1, m4, m5, m7);
-            a01.op01_10(m3, m5);
-            a10.op01_10(m2, m4);
-            a11.op00_11(m1, m3, m2, m6);
-         //}
-         //}
-         /*/
-         if (mSize < 4096)
-         {
-            a00.op00_11(*m1, *m4, *m5, *m7);
-            a01.op01_10(*m3, *m5);
-            a10.op01_10(*m2, *m4);
-            a11.op00_11(*m1, *m3, *m2, *m6);
-         }
-         else
-         {
-            t[1] = std::thread(&Matrix<T>::op00_11, &a00, *m1, *m4, *m5, *m7);
-            t[2] = std::thread(&Matrix<T>::op01_10, &a01, *m3, *m5);
-            t[3] = std::thread(&Matrix<T>::op01_10, &a10, *m2, *m4);
-            t[4] = std::thread(&Matrix<T>::op00_11, &a11, *m1, *m3, *m2, *m6);
-            t[1].join();
-            t[2].join();
-            t[3].join();
-            t[4].join();
-         }
-         delete m1;
-         delete m2;
-         delete m3;
-         delete m4;
-         delete m5;
-         delete m6;
-         delete m7;
-         //delete b1;
-         //delete b2;
-         //delete b3;
-         //delete b4;
-         //delete b5;
-         //delete b6;
-         //delete b7;
-         /**/
-         //a00 = m1;
-         //a00 += m4;
-         //a00 -= m5;
-         //a00 += m7;
-         //a01 = m3;
-         //a01 += m5;
-         //a10 = m2;
-         //a10 += m4;
-         //a11 = m1;
-         //a11 += m3;
-         //a11 -= m2;
-         //a11 += m6;
-         
+         a00.op00_11(m1, m4, m5, m7);
+         a01.op01_10(m3, m5);
+         a10.op01_10(m2, m4);
+         a11.op00_11(m1, m3, m2, m6);
          // The above will re-write matrixA (calling object)
          // Reassemble the quadrants into a single whole
-         //if (result != NULL)
-         //{
-         //   *result = Matrix(a00, a01, a10, a11);
-         //}
-         //std::cerr << "Main catch-all: exit\n";
       }
       else
       {
          // Assume a matrix of size 1
-         //if (result != NULL)
-         //{
-         //   *result[0][0] = mRows[0][0] * matrixB[0][0];
-         //}
          mRows[0][0] = mRows[0][0] * matrixB[0][0];
       }
-      //finished = true;
-   }
-   
-   /**************************************************************************
-    * Matrix multiplication using Strassen's algorithm.
-    * The input matrices must be equal in size and square, 
-    *    and the size must be n x n, where n is a power of 2
-    *************************************************************************/
-   //void mult_wrapper(Matrix<T> matrixB, Matrix<T>* result)
-   void mult_wrapper(Matrix<T> matrixB)
-   {
-      //this->mult_FarmSlave(matrixB, result);
-      this->mult_FarmSlave(matrixB);
-      //this->mult(matrixB);
+      finished = true;
    }
    
    /**************************************************************************
@@ -2111,56 +1230,8 @@ public:
     * The input matrices must be equal in size and square, 
     *    and the size must be n x n, where n is a power of 2
     *************************************************************************/
-   //Matrix operator*(const Matrix matrixB) const
-   //Matrix<T> multStandard(const Matrix<T>& matrixB, Matrix<T>& result) const
-   void multStandard(const Matrix<T>& matrixB, Matrix<T>& result) const
-   {
-      // Take over the lock for result matrix.....
-      //std::lock_guard<std::mutex> lk(result.mMutex);
-      //result.started = true;
-      for (int i = 0; i < mSize; ++i)
-      {
-         for (int j = 0; j < mSize; ++j )
-         {
-            result[i][j] = 0;
-            for (int k = 0; k < mSize; ++k)
-            {
-               result[i][j] += (*this)[i][k] * matrixB[k][j];
-            }
-         }
-      }
-      //result.finished = true;
-      //std::cerr << "Exiting mult_standard...\n";
-      //return result;
-   }
-   
-   /**************************************************************************
-    * Standard matrix multiplication
-    * The input matrices must be equal in size and square, 
-    *    and the size must be n x n, where n is a power of 2
-    *************************************************************************/
-   //Matrix operator*(const Matrix matrixB) const
-   //Matrix<T> multStandard(const Matrix<T>& matrixB, Matrix<T>& result) const
-   //void multStandard2(Matrix<T>* a0, Matrix<T>* a1, bool addA, Matrix<T>* b0, Matrix<T>* b1, bool addB, std::unique_lock<std::mutex>&& ctlMut)
-   //void multStandard2(Matrix<T>* a0, Matrix<T>* a1, bool addA, Matrix<T>* b0, Matrix<T>* b1, bool addB, int& startBlock, std::mutex& mut)
    void multStandard2(Matrix<T>* a0, Matrix<T>* a1, bool addA, Matrix<T>* b0, Matrix<T>* b1, bool addB)
    {
-      //if (!mMutex.try_lock())
-      //{
-      //   std::cerr << Red << "MS2: FAILED TO LOCK!!!!!" << RCol << std::endl;
-      //}
-      //else
-      //{
-      //   mMutex.unlock();
-      //}
-      // Take over the lock for this matrix.....
-      //std::lock_guard<std::mutex> lk(mMutex);
-      //{
-      //std::lock_guard<std::mutex> stLk(mut);
-      //--startBlock;
-      //}
-      //started = true;
-      //ctlMut.unlock();
       // Allocate the memory and fill it with the specified data...
       this->reallocate();
       Matrix<T> matrixA(mSize, false); // Declare but don't allocate
@@ -2181,48 +1252,18 @@ public:
       {
          matrixB.allocCopy(*b0);
       }
-      //bool del_a1 = false;
-      //bool del_b1 = false;
-      //if (a1 == NULL)
-      //{
-      //   a1 = new Matrix<T>(mSize, false);
-      //   a1->allocZero();
-      //   del_a1 = true;
-      //}
-      //if (b1 == NULL)
-      //{
-      //   b1 = new Matrix<T>(mSize, false);
-      //   b1->allocZero();
-      //   del_b1 = true;
-      //}
       for (int i = 0; i < mSize; ++i)
       {
          for (int j = 0; j < mSize; ++j )
          {
             mRows[i][j] = 0;
-            //int a;
-            //int b;
             for (int k = 0; k < mSize; ++k)
             {
-               //a = addA ? ((*a0)[i][k] + (*a1)[i][k]) : ((*a0)[i][k] - (*a1)[i][k]);
-               //b = addB ? ((*b0)[k][j] + (*b1)[k][j]) : ((*b0)[k][j] - (*b1)[k][j]);
-               //mRows[i][j] += a * b;
                mRows[i][j] += matrixA[i][k] * matrixB[k][j];
             }
          }
       }
-      //if (del_a1)
-      //{
-      //   delete a1;
-      //}
-      //if (del_b1)
-      //{
-      //   delete b1;
-      //}
       finished = true;
-      //mMutex.unlock();
-      //std::cerr << "Exiting mult_standard2...\n";
-      //return result;
    }
    
    /*********************************************************************
@@ -2230,7 +1271,6 @@ public:
    *********************************************************************/
    void multStandard3(const Matrix<T>& matrixA, const Matrix<T>& matrixB)
    {
-      //started = true;
       for (int i = 0; i < mSize; i++)
       {
          for (int j = 0; j < mSize; j++)
@@ -2242,142 +1282,95 @@ public:
             }
          }
       }
-      //finished = true;
-   }
-   
-   /*********************************************************************
-   * Allocate and fill the matrix with the specified data
-   *********************************************************************/
-   void multStandard4(const Matrix<T>& matrixB)
-   {
-      //started = true;
-      T** rows;
-      rows = new T*[mSize];
-      for (int i = 0; i < mSize; i++)
-      {
-         rows[i] = new T[mSize];
-         for (int j = 0; j < mSize; j++)
-         {
-            rows[i][j] = 0;
-            for (int k = 0; k < mSize; ++k)
-            {
-               rows[i][j] += mRows[i][k] * matrixB.mRows[k][j];
-            }
-         }
-      }
-      for (int i = 0; i < mSize; i++)
-      {
-         delete [] mRows[i];
-         mRows[i] = rows[i];
-      }
-      delete [] rows;
-      
-      //finished = true;
    }
    
    /************************************************************************
    * Function to read data to fill a matrix from a network socket
    ***********************************************************************/
-   bool readNet(Connection& net)
+   //bool readNet(Connection& net)
+   bool readNet(Connection& net, bool reduceSize = false)
    {
       bool success = true;
-      /*/
-      for (int i = 0; i < mSize; ++i)
+      // It may be duplication, but it will bigger branch misprediction problems
+      if (reduceSize)
       {
-         if (!net.receiveInt(this->mRows[i], mSize * sizeof(T)))
+         short temp;
+         for (int i = 0; i < mSize && success; ++i)
          {
-            std::cerr << Red << "Server closed connection\n";
-            std::cerr << "ERROR: " << net.strError << RCol << std::endl;
-            success = false;
-            break;
-         }
-      }
-      /*/
-      for (int i = 0; i < mSize && success; ++i)
-      {
-         /**/
-         for (int j = 0; j < mSize; ++j)
-         {
-            //if (!net.receiveInt(&(this->mRows[i][j]), (int)sizeof(T)))
-            if (!net.receiveData(&(this->mRows[i][j]), sizeof(T)))
+            for (int j = 0; j < mSize; ++j)
             {
-               std::cerr << Red << "Server closed connection: ReadNet\n";
-               std::cerr << "ERROR: " << net.strError << RCol << std::endl;
-               success = false;
-               break;
+               if (!net.receiveData(&temp, sizeof(short)))
+               {
+                  std::cerr << Red << "Server closed connection: ReadNet\n";
+                  std::cerr << "ERROR: " << net.strError << RCol << std::endl;
+                  success = false;
+                  break;
+               }
+               this->mRows[i][j] = (int)temp;
             }
          }
-         /*/
-         // Currently fails, while above does not...
-         int max = 64;
-         int bytes = sizeof(T) < max ? sizeof(T) : max;
-         //int blocks = sizeof(T) / max;
-         for (int j = 0; j < sizeof(T); j += max)
+      }
+      else
+      {
+         for (int i = 0; i < mSize && success; ++i)
          {
-            if (!net.receiveInt(&(this->mRows[i][j]), bytes))
+            for (int j = 0; j < mSize; ++j)
             {
-               std::cerr << Red << "Server closed connection\n";
-               std::cerr << "ERROR: " << net.strError << RCol << std::endl;
-               success = false;
-               break;
+               if (!net.receiveData(&(this->mRows[i][j]), sizeof(T)))
+               {
+                  std::cerr << Red << "Server closed connection: ReadNet\n";
+                  std::cerr << "ERROR: " << net.strError << RCol << std::endl;
+                  success = false;
+                  break;
+               }
             }
          }
-         /**/
       }
-      /**/
       return success;
    }
    
    /************************************************************************
    * Function to write data from entire matrix to a network socket
    ***********************************************************************/
-   bool writeNet(Connection& net) const
+   //bool writeNet(Connection& net) const
+   bool writeNet(Connection& net, bool reduceSize = false) const
    {
       bool success = true;
-      /*/
-      for (int i = 0; i < mSize; ++i)
+      // It may be duplication, but it will bigger branch misprediction problems
+      if (reduceSize)
       {
-         if (!net.sendInt(this->mRows[i], mSize * (sizeof(T))))
+         short temp;
+         for (int i = 0; i < mSize && success; ++i)
          {
-            std::cerr << Red << "Server closed connection\n";
-            std::cerr << "ERROR: " << net.strError << RCol << std::endl;
-            success = false;
-            break;
-         }
-      }
-      /*/
-      for (int i = 0; i < mSize && success; ++i)
-      {
-         /**/
-         for (int j = 0; j < mSize; ++j)
-         {
-            //if (!net.sendInt(&(this->mRows[i][j]), (int)sizeof(T)))
-            if (!net.sendData(&(this->mRows[i][j]), sizeof(T)))
+            for (int j = 0; j < mSize; ++j)
             {
-               std::cerr << Red << "Server closed connection: WriteNet\n";
-               std::cerr << "ERROR: " << net.strError << RCol << std::endl;
-               success = false;
-               break;
+               temp = (short)(this->mRows[i][j]);
+               if (!net.sendData(&temp, sizeof(short)))
+               {
+                  std::cerr << Red << "Server closed connection: WriteNet\n";
+                  std::cerr << "ERROR: " << net.strError << RCol << std::endl;
+                  success = false;
+                  break;
+               }
             }
          }
-         /*/
-         // Currently fails, while above does not...
-         int max = 64;
-         int bytes = sizeof(T) < max ? sizeof(T) : max;
-         //int blocks = sizeof(T) / max;
-         for (int j = 0; j < sizeof(T); j += max)
+      }
+      else
+      {
+         for (int i = 0; i < mSize && success; ++i)
          {
-            if (!net.sendInt(&(this->mRows[i][j]), bytes))
+            for (int j = 0; j < mSize; ++j)
             {
-               std::cerr << Red << "Server closed connection\n";
-               std::cerr << "ERROR: " << net.strError << RCol << std::endl;
-               success = false;
-               break;
+               if (!net.sendData(&(this->mRows[i][j]), sizeof(T)))
+               {
+                  std::cerr << Red << "Server closed connection: WriteNet\n";
+                  std::cerr << "ERROR: " << net.strError << RCol << std::endl;
+                  success = false;
+                  break;
+               }
             }
          }
-         /**/
       }
-      /**/
       return success;
    }
 };
@@ -2422,19 +1415,6 @@ std::mutex oneAtATime;
 template <class T>
 void threadedManager(int socket, unsigned int id)
 {
-   // Limit execution of this block of code....
-   // Automatically releases when leaving scope
-   // Takes a little bit longer in real time, but will reduce context switches on the systems....
-   //std::lock_guard<std::mutex> lock(oneByOne);
-   //std::lock_guard<std::mutex> lock(threeByThree[id % 3]);
-   // Use a condition variable instead??
-   //std::unique_lock<std::mutex> myLock(limitMultiple);
-   //doMultiple.wait(myLock, []{return multCounter < 3;});
-   //{
-   //std::lock_guard<std::mutex> lock(counterLock);
-   //++multCounter;
-   //}
-   
    //cerr << Gre << "STARTING EXECUTION: THREAD " << id << RCol << "\n";
    Connection net(socket);
    int threadId = 0;
@@ -2472,22 +1452,16 @@ void threadedManager(int socket, unsigned int id)
       matrixA.thread_Stop = 2048;
       matrixA.thread_Start = matrixA.thread_Stop * 2;
    }
-   //matrixA.thread_Stop = size / 4;
-   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   ////////// LOOK AT STRASSEN_INT_OPT_LARGE - WILL THE SAME METHOD WORK TO SPEED UP THE DISTRIBUTED VERSION? ///////////////////////////////////////////////////////////////////////////////////
-   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    
    // Receive matrix A and Receive matrix B
-   if (matrixA.readNet(net) && matrixB.readNet(net))
+   //if (matrixA.readNet(net) && matrixB.readNet(net))
+   if (matrixA.readNet(net, true) && matrixB.readNet(net, true))
    {
       {
       // create some inner scoping for the lock
       // We will allow multiple sends/receives at a time, but no doubling up on computation...
       //std::lock_guard<std::mutex> lock(oneAtATime);
       std::cerr << Gre << "STATUS: Multiplying matrices!!!" << RCol << "\n";
-      //matrixA.mult_FarmSlave(matrixB, NULL);
       matrixA.mult_FarmSlave(matrixB);
       }
       // Send Result
