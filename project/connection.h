@@ -6,8 +6,6 @@
 #define _CONNECTION_H
 
 //#include <iostream> // Includes <string> in the c++11/0x library version
-//#include <iomanip>
-//#include <cmath>
 #include <cstring> // Only needed by sendChar/receiveChar (strlen)
 #include <string> //?????? /// I'm using it, but it is getting included in another header?? (c++11/0x only) (it is included in the c++11/0x <iostream> header
 //#include <sys/types.h> //?????? /// These must be getting included in netdb.h and arpa/inet.h (all)
@@ -15,11 +13,8 @@
 //#include <netinet/in.h> //??????
 #include <netdb.h>
 #include <arpa/inet.h>
-//#include <stdio.h>
 #include <stdlib.h> // Needed with c++99; for some reason included in other library for c++11/0x
 #include <unistd.h> // Needed for close()
-
-//using namespace std; //std:: // only needed for the string strError
 
 /*****************************************************************************
 * class Connection: provides a basic TCP connection.
