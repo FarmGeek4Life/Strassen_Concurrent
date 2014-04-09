@@ -1031,7 +1031,7 @@ public:
                std::cerr << "ERROR (" << computer << "): " << net.strError << RCol << "\n";
                failed = true;
             }
-            // Erase the allocated memory of matrixB. It's not needed anymore.
+            // Erase the allocated memory of matrixB. It's not needed any more.
             matrixB.erase();
             // Receive Result
             if (failed || !this->readNet(net))

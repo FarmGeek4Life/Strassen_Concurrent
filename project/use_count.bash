@@ -35,7 +35,8 @@ for ((i = 1; i <= 35; i+=1))do
    computers[$i]="$ip_start$num"
 done
 # Computer preference order....
-comp_pref=( 6 7 8 9 10 16 17 18 19 20 26 27 28 29 30 31 32 33 34 35 5 14 15 21 22 23 24 25 1 2 3 4 11 12 13 )
+#            1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
+comp_pref=(  7  8 18 20 26 27 28  6  9 10 19 29 30 32 34 35  5 14 15 23 24 31 33 16 17 22 25 21  1  2  3  4 11 12 13 )
 # 1: most used system (remotely)
 # 2 3 4 11 12 13: NX systems (more sensitive to cpu usage)
 # 21 22 23 24 25: Often used remotely by beginning students; often in local use because of access

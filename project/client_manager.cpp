@@ -26,6 +26,8 @@
 // Signal handling....
 #include <signal.h>
 #include <errno.h>
+// For timing....
+#include <ctime>
 
 using namespace std;
 
@@ -182,15 +184,12 @@ int main(int argc, char* argv[])
    {
       file = argv[1];
       file2 = argv[2];
-      //fileOut = argv[3];
       size = atoi(argv[3]);
    }
    else if (argc == 5)
    {
       file = argv[1];
       file2 = argv[2];
-      //fileOut = argv[3];
-      //size = atoi(argv[4]);
       size = atoi(argv[3]);
       thread_Stop = atoi(argv[4]);
    }
@@ -199,8 +198,6 @@ int main(int argc, char* argv[])
       file = argv[1];
       file2 = argv[2];
       fileOut = argv[3];
-      //size = atoi(argv[4]);
-      //thread_Stop = atoi(argv[5]);
       size = atoi(argv[3]);
       thread_Stop = atoi(argv[4]);
       /// Add something here to handle entering computers by command line...
@@ -214,7 +211,27 @@ int main(int argc, char* argv[])
       // How to split it up....
       thread_Stop = size / 2;
    }
-
+   
+   
+   
+   time_t start;
+   time_t readin;
+   time_t calculate;
+   time_t end;
+   
+   time(&start);
+   
+   //cerr << "\nStart Time: " << asctime(localtime(&start));
+   //cerr << "\nEnd Time: " << asctime(localtime(&end)) << endl;
+   double timed;
+   int min;
+   double sec;
+   int times[3][2];
+   
+   
+   
+   
+   
    Matrix<int> matrixA(size);
    Matrix<int> matrixB(size);
    
@@ -236,34 +253,18 @@ int main(int argc, char* argv[])
    {
       return 1;
    }
-   //inFile.open(file.c_str());
-   //
-   //if (inFile.is_open())
-   //{
-   //   inFile >> matrixA;
-   //   inFile.close();
-   //}
-   //else 
-   //{
-   //   cerr << Red << "Unable to open " + file << RCol << endl;
-   //   return 1;
-   //}
-   //
-   //inFile2.open(file2.c_str());
-   //
-   //if (inFile2.is_open())
-   //{
-   //   inFile2 >> matrixB;
-   //   inFile2.close();
-   //}
-   //else 
-   //{
-   //   cerr << Red << "Unable to open " + file2 << RCol << endl;
-   //   return 1;
-   //}
+   
+   time(&readin);
+   timed = difftime (readin, start);
+   times[0][0] = static_cast<int>(timed) / 60;
+   times[0][1] = timed - ( static_cast<double>(times[0][0]) * 60 );
+   //min = static_cast<int>(timed) / 60;
+   //sec = timed - ( static_cast<double>(min) * 60 );
+   //cerr << "Time (read in): " << min << " minutes " << sec << " seconds.\n";
+   
    if (totalComputers == 1)
    {
-      /*/
+      /**/
       if (size < 8192)
       {
          matrixA.thread_Stop = size / 4;
@@ -286,22 +287,41 @@ int main(int argc, char* argv[])
    {
       matrixA.mult_ThreadFarming(matrixB, computers, totalComputers, port);
    }
+   
+   
+   
+   time(&calculate);
+   timed = difftime (calculate, start);
+   times[1][0] = static_cast<int>(timed) / 60;
+   times[1][1] = timed - ( static_cast<double>(times[1][0]) * 60 );
+   //min = static_cast<int>(timed) / 60;
+   //sec = timed - ( static_cast<double>(min) * 60 );
+   //cerr << "Time (compute): " << min << " minutes " << sec << " seconds.\n";
+   
+   
+   
+   
    if (*NetError && size < 128)
    {
       cerr << matrixA;
    }
-   //fout.open(fileOut.c_str());
-   //for (int i = 0; i < size; ++i)
-   //{
-   //   for (int j = 0; j < size; ++j)
-   //   {
-   //   }
-   //   fout << 
-   //}
-   //cerr << matrixA;
-   //fout << matrixA;
    cerr << "Outputting result...\n";
    cout << matrixA;
-
+   
+   
+   time(&end);
+   timed = difftime (end, start);
+   times[2][0] = static_cast<int>(timed) / 60;
+   times[2][1] = timed - ( static_cast<double>(times[2][0]) * 60 );
+   //min = static_cast<int>(timed) / 60;
+   //sec = timed - ( static_cast<double>(min) * 60 );
+   //cerr << "Time (output ): " << min << " minutes " << sec << " seconds.\n";
+   
+   cerr << "Time (read in): " << times[0][0] << " minutes " << times[0][1] << " seconds.\n";
+   cerr << "Time (compute): " << times[1][0] << " minutes " << times[1][1] << " seconds.\n";
+   cerr << "Time (output ): " << times[2][0] << " minutes " << times[2][1] << " seconds.\n";
+   
+   
+   
    return 0;
 }

@@ -1526,7 +1526,7 @@ int main(int argc, char* argv[])
    else
    {
       // Prevent gross inflation of memory requirements for matrices larger than 4096
-      matrixA.thread_Stop = 4096;
+      matrixA.thread_Stop = 2048;
       matrixA.thread_Start = matrixA.thread_Stop * 2;
    }
    /*/

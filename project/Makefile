@@ -57,11 +57,6 @@ ifndef BG_COUNT
   $(info 'BG_COUNT' set to '$(BG_COUNT)')
 endif
 
-strassen_int: strassen_int.cpp
-
-strassen_int_futures: strassen_int_futures.cpp
-#	g++ strassen_int_futures.cpp -o strassen_int_futures ${STD} -pthread
-
 client_manager: client_manager.cpp connection.h errorColors.h matrix.h
 
 client: client_remove client_manager
@@ -85,95 +80,25 @@ server_start: server_leaf
 # Add all recipes where we want to ignore errors....
 .IGNORE: strassen_int_futures
 
-.PHONY: clean all mult_compare compare_big clean_temp client_test server_test dist_test local_test server_cleanup server server_remove client client_remove
+.PHONY: clean all compare_huge clean_temp client_test server_test server_cleanup server server_remove client client_remove
 
-mult_compare: strassen_int strassen_noThreads_int standard strassen_int_opt standard_noThread strassen_int_opt2
-	time ./strassen_noThreads_int matrices/512_1.txt matrices/512_2.txt 512 | diff -q - matrices/512_1-2.txt
-	time ./strassen_int           matrices/512_1.txt matrices/512_2.txt 512 | diff -q - matrices/512_1-2.txt
-	time ./standard               matrices/512_1.txt matrices/512_2.txt 512 | diff -q - matrices/512_1-2.txt
-	time ./strassen_int_opt       matrices/512_1.txt matrices/512_2.txt 512 | diff -q - matrices/512_1-2.txt
-	time ./strassen_int_opt2      matrices/512_1.txt matrices/512_2.txt 512 | diff -q - matrices/512_1-2.txt
-	time ./standard_noThread      matrices/512_1.txt matrices/512_2.txt 512 | diff -q - matrices/512_1-2.txt
-
-TEST_SIZE := 512
-#client_test: client_manager create_big_fast
-client_test: client_manager create_huge
-# Available sizes: 16 32 64 128 512
-	@echo "Use the BG_COMPUTERS and BG_PORT environment variables"
-	@echo "For example, |export BG_COMPUTERS='x.x.x.x:y.y.y.y:z.z.z.z'|"
-	@echo "For example, |export BG_PORT='xxxx'|"
+client_test: client_manager
 	export BG_COMPUTERS="$(BG_COMPUTERS)"; \
 	export BG_PORT="$(BG_PORT)"; \
 	time ./client_manager /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
-#	time ./client_manager /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt /tmp/brysoncg/$(SIZE)_temp.txt $(SIZE)
-#	diff -qs /tmp/brysoncg/$(SIZE)_temp.txt /tmp/brysoncg/$(SIZE)_1-2.txt
-#	rm /tmp/brysoncg/$(SIZE)_temp.txt
-#	time ./client_manager matrices/$(TEST_SIZE)_1.txt matrices/$(TEST_SIZE)_2.txt $(TEST_SIZE) | diff -qs - matrices/$(TEST_SIZE)_1-2.txt
-#	time ./client_manager matrices/16_1.txt  matrices/16_2.txt  16  | diff -qs - matrices/16_1-2.txt
-#	time ./client_manager matrices/32_1.txt  matrices/32_2.txt  32  | diff -qs - matrices/32_1-2.txt
-#	time ./client_manager matrices/64_1.txt  matrices/64_2.txt  64  | diff -qs - matrices/64_1-2.txt
-#	time ./client_manager matrices/128_1.txt matrices/128_2.txt 128 | diff -qs - matrices/128_1-2.txt
-#  To supposedly duplicate stdout to stderr...
-#	time ./client_manager /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | tee /dev/stderr | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+
+client_test_set: client_manager
+	time ./client_manager /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+	time ./client_manager /tmp/brysoncg/$(SIZE)_2.txt /tmp/brysoncg/$(SIZE)_3.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_2-3.txt
+	time ./client_manager /tmp/brysoncg/$(SIZE)_3.txt /tmp/brysoncg/$(SIZE)_4.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_3-4.txt
+	time ./client_manager /tmp/brysoncg/$(SIZE)_4.txt /tmp/brysoncg/$(SIZE)_5.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_4-5.txt
+	time ./client_manager /tmp/brysoncg/$(SIZE)_5.txt /tmp/brysoncg/$(SIZE)_6.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_5-6.txt
+	time ./client_manager /tmp/brysoncg/$(SIZE)_6.txt /tmp/brysoncg/$(SIZE)_1.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_6-1.txt
 
 server_test: server_leaf
 	@echo "Use the BG_PORT environment variable"
 	@echo "For example, |export BG_PORT='xxxx'|"
 	./server_leaf $(BG_PORT)
-
-server_test_view: server_leaf
-	@echo "Use the BG_PORT environment variable"
-	@echo "For example, |export BG_PORT='xxxx'|"
-	./cleanup_servers_failsafe.bash
-	./run_parallel.bash $(BG_PORT) 206 207 208 209 217 218 219
-	./kill_local.bash
-	./server_leaf $(BG_PORT)
-
-client_debug: client_manager
-	g++ -pthread ${STD} -pedantic -g client_manager.cpp -o client_manager
-	@echo "Use the BG_COMPUTERS and BG_PORT environment variables"
-	@echo "For example, |export BG_COMPUTERS='x.x.x.x:y.y.y.y:z.z.z.z'|"
-	@echo "For example, |export BG_PORT='xxxx'|"
-	export BG_COMPUTERS="$(BG_COMPUTERS)"; \
-	export BG_PORT="$(BG_PORT)"; \
-	gdb client_manager -ex "run /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE)"
-#	gdb client_manager -ex "run matrices/64_1.txt matrices/64_2.txt 64"
-
-server_debug: server_leaf
-	@echo "Use the BG_PORT environment variable"
-	@echo "For example, |export BG_PORT='xxxx'|"
-	gdb server_leaf -ex "run $(BG_PORT)"
-
-dist_test: client_manager server_leaf
-# KILL ANY OPEN SERVERS FIRST....
-	./cleanup_servers_failsafe.bash
-# Make careful note of the line continuation......
-	. ./run_parallel.bash 10021 206 207 208 209 217 218 219 ; \
-	time ./client_manager matrices/16_1.txt matrices/16_2.txt 16 | diff -qs - matrices/16_1-2.txt
-#	time ./client_manager matrices/32_1.txt matrices/32_2.txt 32 | diff -qs - matrices/32_1-2.txt
-#	time ./client_manager matrices/64_1.txt matrices/64_2.txt 64 | diff -qs - matrices/64_1-2.txt
-#	time ./client_manager matrices/64_1.txt matrices/64_2.txt 64; \
-#	echo "exited with status '$$?'"
-
-dist_debug: client_manager server_leaf
-# KILL ANY OPEN SERVERS FIRST....
-	./cleanup_servers_failsafe.bash
-# Make careful note of the line continuation......
-	. ./run_parallel.bash 10021 206 207 208 209 217 218 219 ; \
-	gdb client_manager --ex "run matrices/64_1.txt matrices/64_2.txt 64"
-#	time ./client_manager matrices/64_1.txt matrices/64_2.txt 64 | diff -q - matrices/64_1-2.txt
-
-local_test: client_manager server_leaf
-# KILL ANY OPEN SERVERS FIRST....
-	./kill_local.bash
-	export BG_COMPUTERS="$(shell hostname -i)"; \
-	export BG_PORT="10021"; \
-	./server_leaf 10021 & \
-	time ./client_manager matrices/128_1.txt matrices/128_2.txt 128 | diff -qs - matrices/128_1-2.txt
-#	time ./client_manager matrices/64_1.txt  matrices/64_2.txt  64 | diff -qs -  matrices/64_1-2.txt
-#	PID=$?; \
-#	time ./client_manager matrices/64_1.txt  matrices/64_2.txt  64 | diff -qs -  matrices/64_1-2.txt; \
-#	kill -9 $PID
 
 clean_temp:
 	-rm -rf /tmp/brysoncg
@@ -186,36 +111,17 @@ generate_big: generator
 	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
 	./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
 
-create_big: generate_big standard
-#ifndef SIZE
-#  $(warning Please add 'SIZE=[size]' to the command line)
-#endif
-	@echo "creating matrix solution, if required"
-	-( ( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
-	time ./standard /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_1-2.txt ) || true
-# Final check: make sure they all exist, or fail and exit.
-	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
-	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \
-	 && echo "Matrices created/exist, continuing" ) || \
-	( echo "Matrices do NOT exist, exiting now!!" && false )
-
-create_big_lomem: generate_big standard_lo_mem
-#ifndef SIZE
-#  $(warning Please add 'SIZE=[size]' to the command line)
-#endif
+create_huge: generate_big strassen_int_opt_fasterer
 	@echo "creating matrix solution, if required"
 	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
-	time ./standard_lo_mem /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt /tmp/brysoncg/$(SIZE)_1-2.txt $(SIZE) ) || true
+	time (./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
 # Final check: make sure they all exist, or fail and exit.
 	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
 	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \
 	 && echo "Matrices created/exist, continuing" ) || \
 	( echo "Matrices do NOT exist, exiting now!!" && false )
 
-create_huge: generate_big strassen_int_opt_large
-#ifndef SIZE
-#  $(warning Please add 'SIZE=[size]' to the command line)
-#endif
+create_big_lomem: generate_big strassen_int_opt_large
 	@echo "creating matrix solution, if required"
 	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
 	time (./strassen_int_opt_large /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
@@ -225,87 +131,45 @@ create_huge: generate_big strassen_int_opt_large
 	 && echo "Matrices created/exist, continuing" ) || \
 	( echo "Matrices do NOT exist, exiting now!!" && false )
 
-create_big_faster: generate_big strassen_int_opt_faster
-#ifndef SIZE
-#  $(warning Please add 'SIZE=[size]' to the command line)
-#endif
-	@echo "creating matrix solution, if required"
-	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
-	time (./strassen_int_opt_faster /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
-# Final check: make sure they all exist, or fail and exit.
-	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
-	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \
-	 && echo "Matrices created/exist, continuing" ) || \
-	( echo "Matrices do NOT exist, exiting now!!" && false )
-
-create_big_fast: generate_big strassen_int_opt
-#ifndef SIZE
-#  $(warning Please add 'SIZE=[size]' to the command line)
-#endif
-	@echo "creating matrix solution, if required"
-	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
-	time (./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
-# Final check: make sure they all exist, or fail and exit.
-	@( ( [ -d /tmp/brysoncg ] && [ -f /tmp/brysoncg/$(SIZE)_1.txt ] && \
-	[ -f /tmp/brysoncg/$(SIZE)_2.txt ] && [ -f /tmp/brysoncg/$(SIZE)_1-2.txt ] ) \
-	 && echo "Matrices created/exist, continuing" ) || \
-	( echo "Matrices do NOT exist, exiting now!!" && false )
-
-compare_big: create_big standard standard_noThread strassen_int_opt strassen_int_opt2
-#ifndef SIZE
-#  $(warning Please add 'SIZE=[size]' to the command line)
-#endif
-	-time ./standard /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./standard_noThread /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-
 compare_huge: create_huge strassen_int_opt_faster strassen_int_opt_fasterer strassen_int_opt_large
-#ifndef SIZE
-#  $(warning Please add 'SIZE=[size]' to the command line)
-#endif
-#	-time ./strassen_int_opt_faster /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+	-time ./strassen_int_opt_faster /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
 	-time ./strassen_int_opt_large /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
 	-time ./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
 
-compare_big_fast_s: create_big_fast strassen_int_opt strassen_int_opt2 strassen_int_opt_faster strassen_int_opt_large
-#ifndef SIZE
-#  $(warning Please add 'SIZE=[size]' to the command line)
-#endif
-#	-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
-#	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_int_opt_faster /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_int_opt_large /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+local_test_set: strassen_int_opt_fasterer
+	time ./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_1-2.txt
+	time ./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_2.txt /tmp/brysoncg/$(SIZE)_3.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_2-3.txt
+	time ./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_3.txt /tmp/brysoncg/$(SIZE)_4.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_3-4.txt
+	time ./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_4.txt /tmp/brysoncg/$(SIZE)_5.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_4-5.txt
+	time ./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_5.txt /tmp/brysoncg/$(SIZE)_6.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_5-6.txt
+	time ./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_6.txt /tmp/brysoncg/$(SIZE)_1.txt $(SIZE) | diff -qs - /tmp/brysoncg/$(SIZE)_6-1.txt
 
-compare_big_fast: create_big_fast strassen_int_opt strassen_int_opt2
-#ifndef SIZE
-#  $(warning Please add 'SIZE=[size]' to the command line)
-#endif
-	-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-
-compare_big_limit: create_big standard standard_noThread strassen_int_opt strassen_int_opt2
-#ifndef SIZE
-#  $(warning Please add 'SIZE=[size]' to the command line)
-#endif
-	-time ./standard /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) 200 | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./standard_noThread /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-
-compare_big_all: create_big strassen_int strassen_noThreads_int standard standard_noThread strassen_int_opt strassen_int_opt2
-#ifndef SIZE
-#  $(warning Please add 'SIZE=[size]' to the command line)
-#endif
-	-time ./standard /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./standard_noThread /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_int_opt /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_int_opt2 /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_int /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-	-time ./strassen_noThreads_int /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) | diff -q - /tmp/brysoncg/$(SIZE)_1-2.txt
-
-test_futures: strassen_int_futures
-	-time ./strassen_int_futures matrices/512_1.txt matrices/512_2.txt 512 | diff -qs - matrices/512_1-2.txt
+create_tests: generator strassen_int_opt_fasterer
+	-@( [ ! -d /tmp/brysoncg ] && mkdir /tmp/brysoncg ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_1.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_1.txt ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_2.txt ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_3.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_3.txt ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_4.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_4.txt ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_5.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_5.txt ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_6.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	./generator $(SIZE) > /tmp/brysoncg/$(SIZE)_6.txt ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_1-2.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	time (./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_1.txt /tmp/brysoncg/$(SIZE)_2.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_1-2.txt) ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_2-3.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	time (./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_2.txt /tmp/brysoncg/$(SIZE)_3.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_2-3.txt) ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_3-4.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	time (./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_3.txt /tmp/brysoncg/$(SIZE)_4.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_3-4.txt) ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_4-5.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	time (./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_4.txt /tmp/brysoncg/$(SIZE)_5.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_4-5.txt) ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_5-6.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	time (./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_5.txt /tmp/brysoncg/$(SIZE)_6.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_5-6.txt) ) || true
+	-@( ( [ ! -f /tmp/brysoncg/$(SIZE)_6-1.txt ] || [ $$(wc -w /tmp/brysoncg/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
+	time (./strassen_int_opt_fasterer /tmp/brysoncg/$(SIZE)_6.txt /tmp/brysoncg/$(SIZE)_1.txt $(SIZE) > /tmp/brysoncg/$(SIZE)_6-1.txt) ) || true
 
 generate_solutions: standard_noThread
 	time ./standard_noThread matrices/16_1.txt  matrices/16_2.txt  16  > matrices/16_1-2.txt
