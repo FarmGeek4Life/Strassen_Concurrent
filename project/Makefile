@@ -111,20 +111,17 @@ generate_big: generator
 	-@( ( [ ! -f $(TMP_DIR)/$(SIZE)_2.txt ] || [ $$(wc -w $(TMP_DIR)/$(SIZE)_2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
 	./generator $(SIZE) > $(TMP_DIR)/$(SIZE)_2.txt ) || true
 
-create_huge: generate_big strassen_int_opt_fasterer
+create_huge: generate_big strassen_opt
 	@echo "creating matrix solution, if required"
 	-@( ( [ ! -f $(TMP_DIR)/$(SIZE)_1-2.txt ] || [ $$(wc -w $(TMP_DIR)/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
-	time (./strassen_int_opt_fasterer $(TMP_DIR)/$(SIZE)_1.txt $(TMP_DIR)/$(SIZE)_2.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_1-2.txt) ) || true
+	time (./strassen_opt $(TMP_DIR)/$(SIZE)_1.txt $(TMP_DIR)/$(SIZE)_2.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_1-2.txt) ) || true
 # Final check: make sure they all exist, or fail and exit.
 	@( ( [ -d $(TMP_DIR) ] && [ -f $(TMP_DIR)/$(SIZE)_1.txt ] && \
 	[ -f $(TMP_DIR)/$(SIZE)_2.txt ] && [ -f $(TMP_DIR)/$(SIZE)_1-2.txt ] ) \
 	 && echo "Matrices created/exist, continuing" ) || \
 	( echo "Matrices do NOT exist, exiting now!!" && false )
 
-compare_huge: create_huge strassen_int_opt_faster strassen_int_opt_fasterer strassen_int_opt_large strassen_opt
-#	-time ./strassen_int_opt_faster $(TMP_DIR)/$(SIZE)_1.txt $(TMP_DIR)/$(SIZE)_2.txt $(SIZE) | diff -qs - $(TMP_DIR)/$(SIZE)_1-2.txt
-#	-time ./strassen_int_opt_large $(TMP_DIR)/$(SIZE)_1.txt $(TMP_DIR)/$(SIZE)_2.txt $(SIZE) | diff -qs - $(TMP_DIR)/$(SIZE)_1-2.txt
-	-time ./strassen_int_opt_fasterer $(TMP_DIR)/$(SIZE)_1.txt $(TMP_DIR)/$(SIZE)_2.txt $(SIZE) | diff -qs - $(TMP_DIR)/$(SIZE)_1-2.txt
+compare_huge: create_huge strassen_opt
 	-time ./strassen_opt $(TMP_DIR)/$(SIZE)_1.txt $(TMP_DIR)/$(SIZE)_2.txt $(SIZE) | diff -qs - $(TMP_DIR)/$(SIZE)_1-2.txt
 
 local_test_set: strassen_opt
@@ -135,7 +132,7 @@ local_test_set: strassen_opt
 	time ./strassen_opt $(TMP_DIR)/$(SIZE)_5.txt $(TMP_DIR)/$(SIZE)_6.txt $(SIZE) | diff -qs - $(TMP_DIR)/$(SIZE)_5-6.txt
 	time ./strassen_opt $(TMP_DIR)/$(SIZE)_6.txt $(TMP_DIR)/$(SIZE)_1.txt $(SIZE) | diff -qs - $(TMP_DIR)/$(SIZE)_6-1.txt
 
-create_tests: generator strassen_int_opt_fasterer
+create_tests: generator strassen_opt
 	-@( [ ! -d $(TMP_DIR) ] && mkdir $(TMP_DIR) ) || true
 	-@( ( [ ! -f $(TMP_DIR)/$(SIZE)_1.txt ] || [ $$(wc -w $(TMP_DIR)/$(SIZE)_1.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
 	./generator $(SIZE) > $(TMP_DIR)/$(SIZE)_1.txt ) || true
@@ -150,17 +147,17 @@ create_tests: generator strassen_int_opt_fasterer
 	-@( ( [ ! -f $(TMP_DIR)/$(SIZE)_6.txt ] || [ $$(wc -w $(TMP_DIR)/$(SIZE)_2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
 	./generator $(SIZE) > $(TMP_DIR)/$(SIZE)_6.txt ) || true
 	-@( ( [ ! -f $(TMP_DIR)/$(SIZE)_1-2.txt ] || [ $$(wc -w $(TMP_DIR)/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
-	time (./strassen_int_opt_fasterer $(TMP_DIR)/$(SIZE)_1.txt $(TMP_DIR)/$(SIZE)_2.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_1-2.txt) ) || true
+	time (./strassen_opt $(TMP_DIR)/$(SIZE)_1.txt $(TMP_DIR)/$(SIZE)_2.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_1-2.txt) ) || true
 	-@( ( [ ! -f $(TMP_DIR)/$(SIZE)_2-3.txt ] || [ $$(wc -w $(TMP_DIR)/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
-	time (./strassen_int_opt_fasterer $(TMP_DIR)/$(SIZE)_2.txt $(TMP_DIR)/$(SIZE)_3.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_2-3.txt) ) || true
+	time (./strassen_opt $(TMP_DIR)/$(SIZE)_2.txt $(TMP_DIR)/$(SIZE)_3.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_2-3.txt) ) || true
 	-@( ( [ ! -f $(TMP_DIR)/$(SIZE)_3-4.txt ] || [ $$(wc -w $(TMP_DIR)/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
-	time (./strassen_int_opt_fasterer $(TMP_DIR)/$(SIZE)_3.txt $(TMP_DIR)/$(SIZE)_4.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_3-4.txt) ) || true
+	time (./strassen_opt $(TMP_DIR)/$(SIZE)_3.txt $(TMP_DIR)/$(SIZE)_4.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_3-4.txt) ) || true
 	-@( ( [ ! -f $(TMP_DIR)/$(SIZE)_4-5.txt ] || [ $$(wc -w $(TMP_DIR)/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
-	time (./strassen_int_opt_fasterer $(TMP_DIR)/$(SIZE)_4.txt $(TMP_DIR)/$(SIZE)_5.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_4-5.txt) ) || true
+	time (./strassen_opt $(TMP_DIR)/$(SIZE)_4.txt $(TMP_DIR)/$(SIZE)_5.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_4-5.txt) ) || true
 	-@( ( [ ! -f $(TMP_DIR)/$(SIZE)_5-6.txt ] || [ $$(wc -w $(TMP_DIR)/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
-	time (./strassen_int_opt_fasterer $(TMP_DIR)/$(SIZE)_5.txt $(TMP_DIR)/$(SIZE)_6.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_5-6.txt) ) || true
+	time (./strassen_opt $(TMP_DIR)/$(SIZE)_5.txt $(TMP_DIR)/$(SIZE)_6.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_5-6.txt) ) || true
 	-@( ( [ ! -f $(TMP_DIR)/$(SIZE)_6-1.txt ] || [ $$(wc -w $(TMP_DIR)/$(SIZE)_1-2.txt | grep -E -o -e "^[0-9]{1,15}") -ne $$(( $(SIZE) * $(SIZE) )) ] ) && \
-	time (./strassen_int_opt_fasterer $(TMP_DIR)/$(SIZE)_6.txt $(TMP_DIR)/$(SIZE)_1.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_6-1.txt) ) || true
+	time (./strassen_opt $(TMP_DIR)/$(SIZE)_6.txt $(TMP_DIR)/$(SIZE)_1.txt $(SIZE) > $(TMP_DIR)/$(SIZE)_6-1.txt) ) || true
 
 clean:
 	-rm *.o
