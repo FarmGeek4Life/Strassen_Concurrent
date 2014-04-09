@@ -7,7 +7,7 @@ ssh_options="-o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no"
 
 # Run a command on each computer, and set the result as the exit status...
 for ((i = 1; i <= 35; i+=1));do
-  ((echo 'COUNT=$(ps -eLf | grep -v "grep" | grep -c "server_leaf"); exit $COUNT'; exit) | timeout 10s ssh -T -p $SSH_PORT $ssh_options aus213l$i) 2>/dev/null &
+  ((echo 'COUNT=$(ps -eLf | grep -v "grep" | grep -c "server_slave"); exit $COUNT'; exit) | timeout 10s ssh -T -p $SSH_PORT $ssh_options aus213l$i) 2>/dev/null &
   PIDS[$i]=$!
 done
 

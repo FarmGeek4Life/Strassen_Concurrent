@@ -6,7 +6,7 @@ if [ $# -lt 1 ]; then
   return
 fi
 
-make server_leaf
+make server_slave
 
 ssh_options="-o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no"
 # ConnectTimeout: fail after 10 seconds without response - seems to be iffy, use 'timeout' command and chain
@@ -60,7 +60,7 @@ export BG_COUNT="${args[1]}"
 
 for i in ${computers2[@]}; do
   echo "System $i:"
-  ((echo "nohup ~/cs499/project/server_leaf $port >/dev/null 2>&1 &"; exit) | timeout 10s ssh -T -p $SSH_PORT $ssh_options $i) &
+  ((echo "nohup ~/cs499/project/server_slave $port >/dev/null 2>&1 &"; exit) | timeout 10s ssh -T -p $SSH_PORT $ssh_options $i) &
 done
 # Clean up the variables to not leave them as artifacts in the shell environment
 unset ssh_options

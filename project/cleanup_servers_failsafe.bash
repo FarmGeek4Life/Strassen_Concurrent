@@ -7,6 +7,6 @@ ssh_options="-o ConnectTimeout=10 -o BatchMode=yes -o StrictHostKeyChecking=no"
 
 # Requires SSH_PORT to be set in the environment
 for ((i = 1; i <= 35; i+=1))do
-  ((echo -e 'servCount=$(ps -eLf | grep -v "grep" | grep -c "server_leaf")\n pkill server_leaf\n echo "servers on $(hostname -i): $servCount $(ps -eLf | grep -v "grep" | grep -c "server_leaf")"' ; exit) | timeout 10s ssh -T -p $SSH_PORT $ssh_options aus213l$i) &
+  ((echo -e 'servCount=$(ps -eLf | grep -v "grep" | grep -c "server_slave")\n pkill server_slave\n echo "servers on $(hostname -i): $servCount $(ps -eLf | grep -v "grep" | grep -c "server_slave")"' ; exit) | timeout 10s ssh -T -p $SSH_PORT $ssh_options aus213l$i) &
 done
 wait

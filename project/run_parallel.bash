@@ -25,7 +25,7 @@ export BG_PORT="$port"
 
 for ((i = 1; i < $#; i+=1))do
   echo "System $i..."
-  ((echo "nohup ~/cs499/project/server_leaf $port >/dev/null 2>&1 &"; exit) | timeout 10s ssh -T -p $SSH_PORT $ssh_options 157.201.194.${args[$i]}) &
+  ((echo "nohup ~/cs499/project/server_slave $port >/dev/null 2>&1 &"; exit) | timeout 10s ssh -T -p $SSH_PORT $ssh_options 157.201.194.${args[$i]}) &
 done
 
 # Clean up the variables to not leave them as artifacts in the shell environment
